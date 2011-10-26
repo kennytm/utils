@@ -1,3 +1,12 @@
+//-----------------------------------------
+// Detail implementation of utils::variant
+//-----------------------------------------
+//
+//          Copyright kennytm (auraHT Ltd.) 2011.
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file doc/LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
+
 #ifndef VARIANT_IMPL_HPP_90M3SQU09PV
 #define VARIANT_IMPL_HPP_90M3SQU09PV 1
 

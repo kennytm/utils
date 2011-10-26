@@ -1,4 +1,11 @@
-#define DEBUG_GET_INDEX
+//-------------------------------------
+// utils::variant: Tagged union in C++
+//-------------------------------------
+//
+//          Copyright kennytm (auraHT Ltd.) 2011.
+// Distributed under the Boost Software License, Version 1.0.
+//    (See accompanying file doc/LICENSE_1_0.txt or copy at
+//          http://www.boost.org/LICENSE_1_0.txt)
 
 #ifndef VARIANT_HPP_XMPYUK9CBNN
 #define VARIANT_HPP_XMPYUK9CBNN
