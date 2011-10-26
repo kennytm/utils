@@ -1,0 +1,12 @@
+env = Environment(
+    CPPPATH='../../',
+    CXXFLAGS=['-std=c++0x', '-pedantic', '-Wall', '-Wextra', '-DBOOST_TEST_DYN_LINK=1']
+)
+
+
+env.Program(
+    target = 'test',
+    source = Glob('*.cpp'),
+    LIBS = ['boost_unit_test_framework-mt']
+)
+
