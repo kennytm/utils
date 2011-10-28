@@ -51,7 +51,7 @@ struct Tracker
    static void insert(const jas& j)
    {
       s_this_to_sn_[&j] = j.sn_;
-      cout << "jas( " << j.sn_ << ") Registered" << endl;
+      //cout << "jas( " << j.sn_ << ") Registered" << endl;
    }
 
    static void remove(const jas& j)
@@ -74,7 +74,7 @@ struct Tracker
 
 
       s_this_to_sn_.erase(&j);
-      cout << "jas( " << j.sn_ << ") Removed" << endl;
+      //cout << "jas( " << j.sn_ << ") Removed" << endl;
    }
 
    static void check()

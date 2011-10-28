@@ -289,7 +289,7 @@ inline void verify_impl(int line, VariantType& var, spec<S>, std::string str = "
    if(str.length() > 0)
    {
       std::string temp = utils::apply_visitor(to_text(), cvar);
-      std::cout << "temp = " << temp << ", str = " << str << std::endl;
+      //std::cout << "temp = " << temp << ", str = " << str << std::endl;
       BOOST_CHECK_EQUAL(temp, str);
    }
 }
