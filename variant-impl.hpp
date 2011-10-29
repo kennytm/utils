@@ -244,23 +244,15 @@ static inline constexpr bool check_unambiguous(bool me_exact, bool else_exact, b
     return me_exact && else_exact ? false : me_exact != else_exact ? true : rest;
 }
 
-template <typename T, typename = void>
-struct signed_unqual
-{
-    typedef typename std::remove_cv<T>::type type;
-};
-
-template <typename T>
-struct signed_unqual<T, typename std::enable_if<std::is_integral<T>::value>::type>
-{
-    typedef typename std::make_signed<typename std::remove_cv<T>::type>::type type;
-};
-
 template <typename T, typename U>
 static inline constexpr bool is_same_upto_cv() noexcept
 {
-    return std::is_same<typename std::remove_cv<T>::type,
-                        typename std::remove_cv<U>::type>::value;
+    return std::is_same<typename std::remove_cv<
+                            typename std::remove_reference<T
+                        >::type>::type,
+                        typename std::remove_cv<
+                            typename std::remove_reference<U>::type
+                        >::type>::value;
 }
 
 template <typename T, typename U>

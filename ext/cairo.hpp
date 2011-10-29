@@ -26,22 +26,27 @@ namespace xx_impl
             static void release(cairo##middle##_t* x) noexcept \
             { cairo##middle##_destroy(x); } \
             static long use_count(cairo##middle##_t* x) noexcept \
-            { cairo##middle##_get_reference_count(x); }
+            { return cairo##middle##_get_reference_count(x); }
 
         DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD()
         DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD(_pattern)
-        DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD(_region)
+      //DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD(_region)
         DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD(_font_face)
         DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD(_scaled_font)
         DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD(_device)
         DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD(_surface)
 
+        static void add_ref(cairo_region_t* x) noexcept
+        { cairo_region_reference(x); }
+        static void release(cairo_region_t* x) noexcept
+        { cairo_region_destroy(x); }
+
         #undef DEFINE_CAIRO_REFCOUNT_METHODS_0BSUGSC2MTPD
     };
 }
 
-UTILS_DEF_SMART_PTR_ALIAS(unique, CairoDellocator)
-UTILS_DEF_SMART_PTR_ALIAS(shared, CairoDellocator)
+UTILS_DEF_SMART_PTR_ALIAS(unique, xx_impl::CairoDellocator)
+UTILS_DEF_SMART_PTR_ALIAS(shared, xx_impl::CairoDellocator)
 
 }}
 

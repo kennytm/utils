@@ -227,7 +227,7 @@ namespace xx_impl
 //{{{ generic_unique_ptr
 
 #define BASE_GTI9R9EEWSN(self) \
-    xx_impl::generic_smart_ptr<T, GenericDeleter, generic_##self##_ptr>
+    xx_impl::generic_smart_ptr<T, GenericDeleter, utils::generic_##self##_ptr>
 
 template <typename T, typename GenericDeleter>
 class generic_unique_ptr : public BASE_GTI9R9EEWSN(unique)
