@@ -112,6 +112,12 @@ namespace utils {
             apply(_storage, other._storage, _index, ctor);
         }
 
+        variant(const variant<T...>& other) : _index(other._index)
+        {
+            xx_impl::init_visitor_2 ctor;
+            apply(_storage, other._storage, _index, ctor);
+        }
+
         variant(variant<T...>&& other) : _index(other._index)
         {
             xx_impl::init_visitor_2 ctor;
@@ -261,7 +267,7 @@ namespace utils {
             return *this;
         }
 
-        variant<T...>& operator=(variant<T...>& other)
+        variant<T...>& operator=(const variant<T...>& other)
         {
             if (_index == other._index)
             {
@@ -282,6 +288,12 @@ namespace utils {
                 _index = other._index;
             }
             return *this;
+        }
+
+        variant<T...>& operator=(variant<T...>& other)
+        {
+            const auto& other_const = other;
+            return (*this = other_const);
         }
 
         variant<T...>& operator=(variant<T...>&& other)
