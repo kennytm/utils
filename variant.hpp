@@ -335,7 +335,7 @@ namespace utils {
         }
 
         template <typename U>
-        bool operator==(const U& other)
+        bool operator==(const U& other) const
         {
             typedef xx_impl::get_index<U, xx_impl::is_equatable, T...> index_tmpl;
             static_assert(index_tmpl::found, "Equating variant to unexpected type.");
@@ -350,7 +350,7 @@ namespace utils {
         }
 
         template <typename U>
-        bool operator<(const U& other)
+        bool operator<(const U& other) const
         {
             typedef xx_impl::get_index<U, xx_impl::is_less_than_comparable, T...> index_tmpl;
             static_assert(index_tmpl::found, "Comparing variant with unexpected type.");
@@ -365,7 +365,7 @@ namespace utils {
         }
 
         template <typename U>
-        bool operator>(const U& other)
+        bool operator>(const U& other) const
         {
             typedef xx_impl::get_index<U, xx_impl::is_greater_than_comparable, T...> index_tmpl;
             static_assert(index_tmpl::found, "Comparing variant with unexpected type.");
@@ -379,7 +379,7 @@ namespace utils {
             return xx_impl::static_applier<index_of_U>()(_storage, gt);
         }
 
-        bool operator==(const variant<T...>& other)
+        bool operator==(const variant<T...>& other) const
         {
             if (_index != other._index)
                 return false;
@@ -388,7 +388,7 @@ namespace utils {
             return xx_impl::apply(_storage, other._storage, _index, eq);
         }
 
-        bool operator<(const variant<T...>& other)
+        bool operator<(const variant<T...>& other) const
         {
             if (_index != other._index)
                 return _index < other._index;
