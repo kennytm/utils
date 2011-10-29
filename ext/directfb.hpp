@@ -13,6 +13,7 @@
 
 #include <directfb.h>
 #include "../ptr.hpp"
+#include "../boilerplates.hpp"
 
 namespace utils { namespace directfb {
 
@@ -97,6 +98,76 @@ private:
     void* _ptr;
     int _pitch;
 };
+
+IMPLEMENT_ENUM_BITWISE_OPERATORS(
+    (DFBDisplayLayerCapabilities)
+    (DFBScreenCapabilities)
+    (DFBDisplayLayerOptions)
+    (DFBDisplayLayerBufferMode)
+    (DFBSurfaceDescriptionFlags)
+    (DFBPaletteDescriptionFlags)
+    (DFBSurfaceCapabilities)
+    (DFBPaletteCapabilities)
+    (DFBSurfaceDrawingFlags)
+    (DFBSurfaceBlittingFlags)
+    (DFBSurfaceRenderOptions)
+    (DFBAccelerationMask)
+    (DFBDisplayLayerTypeFlags)
+    (DFBInputDeviceTypeFlags)
+    (DFBInputDeviceCapabilities)
+    (DFBWindowDescriptionFlags)
+    (DFBDataBufferDescriptionFlags)
+    (DFBWindowCapabilities)
+    (DFBWindowOptions)
+    (DFBFontAttributes)
+    (DFBFontDescriptionFlags)
+//  (DFBSurfaceHintFlags)
+    (DFBDisplayLayerSourceCaps)
+    (DFBInputDeviceAxisInfoFlags)
+    (DFBVideoProviderCapabilities)
+    (DFBVideoProviderPlaybackFlags)
+    (DFBVideoProviderAudioUnits)
+    (DFBColorAdjustmentFlags)
+    (DFBDisplayLayerConfigFlags)
+    (DFBScreenMixerCapabilities)
+    (DFBScreenMixerConfigFlags)
+    (DFBScreenOutputCapabilities)
+    (DFBScreenOutputConnectors)
+    (DFBScreenOutputSignals)
+    (DFBScreenOutputSlowBlankingSignals)
+    (DFBScreenOutputResolution)
+    (DFBScreenOutputConfigFlags)
+    (DFBScreenEncoderCapabilities)
+    (DFBScreenEncoderType)
+    (DFBScreenEncoderTVStandards)
+    (DFBScreenEncoderFrequency)
+    (DFBScreenEncoderConfigFlags)
+//  (DFBScreenEncoderPictureFraming)
+    (DFBSurfaceFlipFlags)
+    (DFBSurfaceTextFlags)
+    (DFBSurfaceLockFlags)
+    (DFBSurfaceMaskFlags)
+    (DFBInputDeviceButtonMask)
+    (DFBInputEventFlags)
+    (DFBWindowEventType)
+    (DFBWindowEventFlags)
+    (DFBVideoProviderEventType)
+    (DFBVideoProviderEventDataSubType)
+//  (DFBWindowCursorFlags)
+    (DFBImageCapabilities)
+    (DFBStreamCapabilities)
+    (DFBInputDeviceLockState)
+/*  (DFBGL2ContextDescriptionFlags)
+    (DFBGL2ContextCapabilities)
+    (WaterTransformFlags)
+    (WaterTransformType)
+    (WaterRenderMode)
+    (WaterPaintOptions)
+    (WaterElementFlags)
+    (WaterShapeFlags)
+    (DFBWindowConfigFlags)
+    (DFBWindowStateFlags) */
+)
 
 }}
 
