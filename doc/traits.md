@@ -38,6 +38,6 @@ This template currently supports the following types:
 * Member functions (``R(C::*)(T...)``)
 * ``std::function<F>``
 * Type of lambda functions, and any other types that has a unique ``operator()``.
-* Type of ``std::mem_fn`` (only for libstdc++) -- the first argument is treated
-  as a raw pointer.
+* Type of ``std::mem_fn`` (only for GCC's libstdc++ and LLVM's libc++).
+  Following the C++ spec, the first argument will be a raw pointer.
 

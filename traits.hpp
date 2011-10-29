@@ -90,31 +90,37 @@ struct function_traits<std::function<FunctionType>>
     : public function_traits<FunctionType>
 {};
 
-#ifdef _GLIBCXX_FUNCTIONAL
+#if defined(_GLIBCXX_FUNCTIONAL)
+#define MEM_FN_SYMBOL_XX0SL7G4Z0J std::_Mem_fn
+#elif defined(_LIBCPP_FUNCTIONAL)
+#define MEM_FN_SYMBOL_XX0SL7G4Z0J std::__mem_fn
+#endif
+
+#ifdef MEM_FN_SYMBOL_XX0SL7G4Z0J
 
 template <typename R, typename C>
-struct function_traits<std::_Mem_fn<R C::*>>
+struct function_traits<MEM_FN_SYMBOL_XX0SL7G4Z0J<R C::*>>
     : public function_traits<R(C*)>
 {};
 template <typename R, typename C, typename... A>
-struct function_traits<std::_Mem_fn<R(C::*)(A...)>>
+struct function_traits<MEM_FN_SYMBOL_XX0SL7G4Z0J<R(C::*)(A...)>>
     : public function_traits<R(C*, A...)>
 {};
 template <typename R, typename C, typename... A>
-struct function_traits<std::_Mem_fn<R(C::*)(A...) const>>
+struct function_traits<MEM_FN_SYMBOL_XX0SL7G4Z0J<R(C::*)(A...) const>>
     : public function_traits<R(const C*, A...)>
 {};
 template <typename R, typename C, typename... A>
-struct function_traits<std::_Mem_fn<R(C::*)(A...) volatile>>
+struct function_traits<MEM_FN_SYMBOL_XX0SL7G4Z0J<R(C::*)(A...) volatile>>
     : public function_traits<R(volatile C*, A...)>
 {};
 template <typename R, typename C, typename... A>
-struct function_traits<std::_Mem_fn<R(C::*)(A...) const volatile>>
+struct function_traits<MEM_FN_SYMBOL_XX0SL7G4Z0J<R(C::*)(A...) const volatile>>
     : public function_traits<R(const volatile C*, A...)>
 {};
 
+#undef MEM_FN_SYMBOL_XX0SL7G4Z0J
 #endif
-
 
 }
 
