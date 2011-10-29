@@ -29,7 +29,7 @@ template <typename HandleDeleter>
 class unique_handle
 {
 public:
-    typedef decltype(HandleDeleter::null) type;
+    typedef typename std::remove_cv<decltype(HandleDeleter::null)>::type type;
     typedef HandleDeleter deleter_type;
 
     static_assert(std::is_scalar<type>::value, "Only scalar types are supported.");
@@ -73,12 +73,18 @@ public:
         return *this;
     }
 
+    unique_handle& operator=(std::nullptr_t) noexcept
+    {
+        this->reset();
+        return *this;
+    }
+
     void swap(unique_handle& other) noexcept
     {
         std::swap(_obj, other._obj);
     }
 
-    decltype(std::declval<type>()[0])& operator[](size_t i) const { return _obj[i]; }
+    explicit operator bool() const noexcept { return _obj != HandleDeleter::null; }
 
 private:
     type _obj;

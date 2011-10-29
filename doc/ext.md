@@ -70,3 +70,20 @@ public:
 An RAII structure to lock a surface for direct bytes access (using the Lock and
 Unlock methods in IDirectFBSurface).
 
+utils::posix
+------------
+
+```c++
+typedef utils::unique_handle<(unspecified)> unique_fd;
+```
+
+A smart handle to store a POSIX file descriptor, which is an ``int``. The owned
+fd will be ``close(2)``-ed on destruction.
+
+```c++
+typedef utils::generic_unique_ptr<DIR, (unspecified)> unique_dir_ptr;
+```
+
+A smart pointer to the DIR structure. It will be ``closedir(3)``-ed on
+destruction.
+
