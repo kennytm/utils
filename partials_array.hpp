@@ -25,7 +25,7 @@ public:
     typedef typename function_traits<ComputerType>::result_type value_type;
 
     partials_array() = default;
-    explicit partials_array(const ComputerType& computer) : _computer(computer) {};
+    explicit partials_array(const ComputerType& computer) : _computer(computer) {}
 
     template <typename RandomAccessIterator>
     void update(RandomAccessIterator begin, RandomAccessIterator end)

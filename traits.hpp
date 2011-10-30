@@ -123,6 +123,21 @@ struct function_traits<MEM_FN_SYMBOL_XX0SL7G4Z0J<R(C::*)(A...) const volatile>>
 #undef MEM_FN_SYMBOL_XX0SL7G4Z0J
 #endif
 
+#define FORWARD_RES_8QR485JMSBT \
+    typename std::conditional< \
+        std::is_lvalue_reference<R>::value, \
+        T&, \
+        typename std::remove_reference<T>::type&& \
+    >::type
+
+template <typename R, typename T>
+FORWARD_RES_8QR485JMSBT forward_like(T&& input) noexcept
+{
+    return static_cast<FORWARD_RES_8QR485JMSBT>(input);
+}
+
+#undef FORWARD_RES_8QR485JMSBT
+
 }
 
 #endif

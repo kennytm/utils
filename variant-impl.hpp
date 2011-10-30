@@ -13,6 +13,7 @@
 #include <cassert>
 #include <type_traits>
 #include <climits>
+#include "traits.hpp"
 #if !defined(BOOST_NO_TYPEID)
 #include <typeinfo>
 #endif
@@ -20,20 +21,6 @@
 namespace utils { namespace xx_impl {
 
 //{{{ Utilities
-
-template <typename From, typename To>
-struct copy_reference
-{
-    typedef typename std::remove_reference<To>::type RawTo;
-    typedef typename std::conditional<std::is_lvalue_reference<From>::value,
-                                      RawTo&, RawTo&&>::type Type;
-};
-
-template <typename Like, typename U>
-typename copy_reference<Like, U>::Type forward_like(U&& t) noexcept
-{
-    return static_cast<typename copy_reference<Like, U>::Type>(t);
-}
 
 static inline constexpr size_t max2(size_t a, size_t b) noexcept
 {

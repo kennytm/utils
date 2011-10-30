@@ -177,6 +177,12 @@ BOOST_AUTO_TEST_CASE(lambda_test_case)
     BOOST_CHECK_TYPE_EQUAL(FT::result_type, double);
     BOOST_CHECK_EQUAL(FT::arity, 1);
     BOOST_CHECK_TYPE_EQUAL(FT::arg<0>::type, int);
+
+    auto lambda2 = [&](float z) mutable -> void* { x = z; return nullptr; };
+    typedef function_traits<decltype(lambda2)> FT2;
+    BOOST_CHECK_TYPE_EQUAL(FT2::result_type, void*);
+    BOOST_CHECK_EQUAL(FT2::arity, 1);
+    BOOST_CHECK_TYPE_EQUAL(FT2::arg<0>::type, float);
 }
 
 BOOST_AUTO_TEST_CASE(mem_fn_test_case)
@@ -200,6 +206,36 @@ BOOST_AUTO_TEST_CASE(mem_fn_test_case)
     BOOST_CHECK_EQUAL(FTq::arity, 2);
     BOOST_CHECK_TYPE_EQUAL(FTq::arg<0>::type, const K*);
     BOOST_CHECK_TYPE_EQUAL(FTq::arg<1>::type, float);
+}
+
+struct ForwardLike_S
+{
+    char f(int&) const noexcept { return 'L'; }
+    char f(const int&) const noexcept { return 'C'; }
+    char f(int&&) const noexcept { return 'R'; }
+
+    template <typename U>
+    char g(U&& u) const noexcept
+    {
+        return this->f(utils::forward_like<U>(u.z));
+    }
+};
+
+BOOST_AUTO_TEST_CASE(forward_like_test_case)
+{
+    struct T
+    {
+        int z;
+        static T get_t() noexcept { return T(); }
+        static const T get_const_t() noexcept { return T(); }
+    };
+
+    ForwardLike_S s;
+
+    T t;
+    BOOST_CHECK_EQUAL(s.g(t), 'L');
+    BOOST_CHECK_EQUAL(s.g(T::get_t()), 'R');
+    BOOST_CHECK_EQUAL(s.g(T::get_const_t()), 'C');
 }
 
 BOOST_AUTO_TEST_SUITE_END()
