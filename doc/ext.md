@@ -87,3 +87,21 @@ typedef utils::generic_unique_ptr<DIR, (unspecified)> unique_dir_ptr;
 A smart pointer to the DIR structure. It will be ``closedir(3)``-ed on
 destruction.
 
+```c++
+class exception : public std::exception
+{
+public:
+    int error_number;
+
+    exception(int errno_ = errno);
+};
+```
+
+An exception which wraps an ``errno(3)``.
+
+```c++
+void checked(int result);
+```
+
+Throws an ``utils::posix::exception`` when the result is negative.
+

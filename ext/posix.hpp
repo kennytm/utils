@@ -48,6 +48,12 @@ public:
     }
 };
 
+static inline void checked(int retcode)
+{
+    if (retcode < 0)
+        throw utils::posix::exception();
+}
+
 }}
 
 #endif

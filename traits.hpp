@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <tuple>
 #include <functional>
+#include <type_traits>
 
 namespace utils {
 
