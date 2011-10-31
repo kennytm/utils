@@ -41,3 +41,16 @@ This template currently supports the following types:
 * Type of ``std::mem_fn`` (only for GCC's libstdc++ and LLVM's libc++).
   Following the C++ spec, the first argument will be a raw pointer.
 
+utils::forward_like<U>
+----------------------
+Forward an object like the l/r-valuedness of *U*.
+
+utils::copy_cv
+--------------
+Copy the CV-qualifier of one type to another, e.g.
+
+```c++
+utils::copy_cv<const int, double>::type f = 4.0;
+// ^ 'f' is a 'const double'.
+```
+

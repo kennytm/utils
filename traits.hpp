@@ -138,6 +138,18 @@ FORWARD_RES_8QR485JMSBT forward_like(T&& input) noexcept
 
 #undef FORWARD_RES_8QR485JMSBT
 
+template <typename From, typename To>
+struct copy_cv
+{
+private:
+    typedef typename std::remove_cv<To>::type raw_To;
+    typedef typename std::conditional<std::is_const<From>::value,
+                                      const raw_To, raw_To>::type const_raw_To;
+public:
+    typedef typename std::conditional<std::is_volatile<From>::value,
+                                      volatile const_raw_To, const_raw_To>::type type;
+};
+
 }
 
 #endif

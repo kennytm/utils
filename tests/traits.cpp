@@ -238,6 +238,14 @@ BOOST_AUTO_TEST_CASE(forward_like_test_case)
     BOOST_CHECK_EQUAL(s.g(T::get_const_t()), 'C');
 }
 
+BOOST_AUTO_TEST_CASE(copy_cv_test_case)
+{
+    BOOST_CHECK_TYPE_EQUAL(utils::copy_cv<const int, double>::type, const double);
+    BOOST_CHECK_TYPE_EQUAL(utils::copy_cv<int, const double>::type, double);
+    BOOST_CHECK_TYPE_EQUAL(utils::copy_cv<int* volatile, long long>::type, volatile long long);
+    BOOST_CHECK_TYPE_EQUAL(utils::copy_cv<const char*, int>::type, int);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 
