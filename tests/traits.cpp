@@ -7,6 +7,7 @@
 #include <functional>
 #include <boost/test/unit_test.hpp>
 #include <utils/traits.hpp>
+#include <map>
 
 using utils::function_traits;
 
@@ -244,6 +245,16 @@ BOOST_AUTO_TEST_CASE(copy_cv_test_case)
     BOOST_CHECK_TYPE_EQUAL(utils::copy_cv<int, const double>::type, double);
     BOOST_CHECK_TYPE_EQUAL(utils::copy_cv<int* volatile, long long>::type, volatile long long);
     BOOST_CHECK_TYPE_EQUAL(utils::copy_cv<const char*, int>::type, int);
+}
+
+BOOST_AUTO_TEST_CASE(pointee_test_case)
+{
+    BOOST_CHECK_TYPE_EQUAL(utils::pointee<int*>::type, int);
+    BOOST_CHECK_TYPE_EQUAL(utils::pointee<int**>::type, int*);
+    BOOST_CHECK_TYPE_EQUAL(utils::pointee<const int*>::type, const int);
+    BOOST_CHECK_TYPE_EQUAL(utils::pointee<std::string::const_iterator>::type, const char);
+    typedef std::map<short, char> Map;
+    BOOST_CHECK_TYPE_EQUAL(utils::pointee<Map::reverse_iterator>::type, Map::value_type);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

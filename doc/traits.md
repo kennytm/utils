@@ -54,3 +54,9 @@ utils::copy_cv<const int, double>::type f = 4.0;
 // ^ 'f' is a 'const double'.
 ```
 
+utils::pointee
+--------------
+
+Returns the type that pointed by the input template parameter. This is similar
+to ``std::remove_pointer``, but works with iterators too.
+

@@ -150,6 +150,12 @@ public:
                                       volatile const_raw_To, const_raw_To>::type type;
 };
 
+template <typename T>
+struct pointee
+{
+    typedef typename std::remove_reference<decltype(*std::declval<T>())>::type type;
+};
+
 }
 
 #endif
