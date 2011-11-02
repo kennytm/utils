@@ -10,6 +10,7 @@
 #ifndef PROPERTY_HPP_K8TCXM1VK5M
 #define PROPERTY_HPP_K8TCXM1VK5M 1
 
+#include <cstddef>
 #include <iosfwd>
 #include "traits.hpp"
 

@@ -397,6 +397,13 @@ namespace utils {
             return xx_impl::apply(_storage, other._storage, _index, lt);
         }
 
+        template <typename U>
+        bool operator!=(const U& a) const { return !(*this == a); }
+        template <typename U>
+        bool operator>=(const U& a) const { return !(*this < a); }
+        template <typename U>
+        bool operator<=(const U& a) const { return !(*this > a); }
+
 #if !defined(BOOST_NO_TYPEID)
         const std::type_info& type() const noexcept
         {
@@ -516,6 +523,12 @@ namespace utils {
     bool operator<(const U& a, const variant<T...>& v) { return v > a; }
     template <typename U, typename... T>
     bool operator>(const U& a, const variant<T...>& v) { return v < a; }
+    template <typename U, typename... T>
+    bool operator!=(const U& a, const variant<T...>& v) { return !(v == a); }
+    template <typename U, typename... T>
+    bool operator>=(const U& a, const variant<T...>& v) { return !(v > a); }
+    template <typename U, typename... T>
+    bool operator<=(const U& a, const variant<T...>& v) { return !(v < a); }
 
     template <typename... T>
     std::ostream& operator<<(std::ostream& stream, const variant<T...>& v)
