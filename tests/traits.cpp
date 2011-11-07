@@ -257,6 +257,17 @@ BOOST_AUTO_TEST_CASE(pointee_test_case)
     BOOST_CHECK_TYPE_EQUAL(utils::pointee<Map::reverse_iterator>::type, Map::value_type);
 }
 
+BOOST_AUTO_TEST_CASE(ct_iota_test)
+{
+    typedef utils::ct_integers_list<1, 4, 9, 16> ints;
+    typedef ints::push_back<5>::type ints_with_5;
+
+    BOOST_CHECK_TYPE_EQUAL(ints_with_5, utils::ct_integers_list<1, 4, 9, 16, 5>);
+
+    typedef utils::ct_iota<6>::type iota;
+    BOOST_CHECK_TYPE_EQUAL(iota, utils::ct_integers_list<0, 1, 2, 3, 4, 5>);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 

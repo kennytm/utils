@@ -156,6 +156,29 @@ struct pointee
     typedef typename std::remove_reference<decltype(*std::declval<T>())>::type type;
 };
 
+//-- Compile-time metafunctions ------------------------------------------------
+
+template <size_t... n>
+struct ct_integers_list {
+    template <size_t m>
+    struct push_back
+    {
+        typedef ct_integers_list<n..., m> type;
+    };
+};
+
+template <size_t count>
+struct ct_iota
+{
+    typedef typename ct_iota<count-1>::type::template push_back<count-1>::type type;
+};
+
+template <>
+struct ct_iota<0>
+{
+    typedef ct_integers_list<> type;
+};
+
 }
 
 #endif

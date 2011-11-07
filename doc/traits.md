@@ -60,3 +60,14 @@ utils::pointee
 Returns the type that pointed by the input template parameter. This is similar
 to ``std::remove_pointer``, but works with iterators too.
 
+utils::ct_integers_list\<n...>
+------------------------------
+This is a compile-time data structure to hold a list of integers (``size_t``).
+
+* ``push_back<m>::type`` --- Push an integer *m* to the end of the list.
+
+utils::ct_iota\<n>::type
+------------------------
+Generate ``utils::ct_integers_list<0, 1, ..., n-1>``.
+
+
