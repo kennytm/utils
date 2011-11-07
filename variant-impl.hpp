@@ -589,6 +589,7 @@ public:
     }
 };
 
+#ifndef BOOST_NO_TYPEID
 class typeid_visitor : public static_visitor<const std::type_info&>
 {
 public:
@@ -598,6 +599,7 @@ public:
         return typeid(u);
     }
 };
+#endif
 
 //}}}
 
