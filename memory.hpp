@@ -250,6 +250,10 @@ public:
         : BASE_GTI9R9EEWSN(unique)(std::move(other))
     {}
 
+    generic_unique_ptr(generic_unique_ptr&& other) noexcept
+        : BASE_GTI9R9EEWSN(unique)(std::move(other))
+    {}
+
     generic_unique_ptr& operator=(generic_unique_ptr&& other)
     {
         return BASE_GTI9R9EEWSN(unique)::operator=(std::move(other));
@@ -321,6 +325,10 @@ public:
 
     template <typename U>
     generic_shared_ptr(generic_unique_ptr<U, GenericDeleter>&& other) noexcept
+        : BASE_GTI9R9EEWSN(shared)(std::move(other))
+    {}
+
+    generic_shared_ptr(generic_shared_ptr&& other) noexcept
         : BASE_GTI9R9EEWSN(shared)(std::move(other))
     {}
 
