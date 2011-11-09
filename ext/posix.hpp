@@ -55,10 +55,11 @@ public:
     }
 };
 
-static inline void checked(int retcode)
+static inline int checked(int retcode)
 {
     if (retcode < 0)
         throw utils::posix::exception();
+    return retcode;
 }
 
 }}
