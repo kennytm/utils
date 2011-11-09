@@ -100,7 +100,7 @@ public:
 An exception which wraps an ``errno(3)``.
 
 ```c++
-void checked(int result);
+int checked(int result);
 ```
 
 Throws an ``utils::posix::exception`` when the result is negative.
