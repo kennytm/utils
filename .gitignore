@@ -3,3 +3,5 @@ test
 *.swp
 *.swo
 .sconsign*
+.DS_Store
+

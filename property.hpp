@@ -59,6 +59,12 @@ namespace xx_impl
             {
                 return os << static_cast<T>(pr);
             }
+
+            T operator->() const
+            {
+                static_assert(std::is_pointer<T>::value, "Cannot call -> on non-pointers");
+                return static_cast<T>(*this);
+            }
         };
 
         template <typename T, void (Owner::*setter)(T)>
