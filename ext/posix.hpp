@@ -15,6 +15,7 @@
 #include <exception>
 #include <unistd.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include "../memory.hpp"
 
 namespace utils { namespace posix {
@@ -31,10 +32,16 @@ namespace xx_impl
     {
         static void release(DIR* d) noexcept { closedir(d); }
     };
+
+    struct DLDeallocator
+    {
+        static void release(void* handle) noexcept { dlclose(handle); } 
+    };
 }
 
 typedef utils::unique_handle<xx_impl::POSIXFildesDeallocator> unique_fd;
 typedef utils::generic_unique_ptr<DIR, xx_impl::DirDeallocator> unique_dir_ptr;
+typedef utils::generic_unique_ptr<void, xx_impl::DLDeallocator> unique_dl_handle;
 
 class exception : public std::exception
 {
