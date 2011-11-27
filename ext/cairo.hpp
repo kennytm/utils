@@ -7,6 +7,35 @@
 //    (See accompanying file doc/LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+/**
+
+``<utils/ext/cairo.hpp>`` --- cairo RAII Support
+================================================
+
+This module overrides the default deleter for cairo types, to provide
+:term:`RAII` via the ``utils::cairo::unique_ptr<T>`` and
+``utils::cairo::shared_ptr<T>`` :term:`smart pointer`\ s, without providing an
+explicit deleter.
+
+Synopsis
+--------
+
+Usage::
+
+    #include <cmath>
+    #include <memory>
+    #include <utils/ext/cairo.hpp>
+
+    void draw_unit_circle(cairo_surface_t* surface)
+    {
+        utils::cairo::unique_ptr<cairo_t> context (cairo_create(surface));
+        cairo_arc(context.get(),
+                  /\*xc*\/0.0, /\*yc*\/0.0, /\*radius*\/1.0,
+                  /\*angle1*\/0.0, /\*angle2*\/2*M_PI);
+        // cairo_destroy(context.get()) is called implicitly here
+    }
+
+*/
 
 #ifndef EXT_CAIRO_HPP_4MII6FAREFC
 #define EXT_CAIRO_HPP_4MII6FAREFC
@@ -15,6 +44,11 @@
 #include "../memory.hpp"
 
 namespace utils { namespace cairo {
+
+/**
+Members
+-------
+*/
 
 namespace xx_impl
 {
@@ -45,7 +79,18 @@ namespace xx_impl
     };
 }
 
+/**
+.. type:: type utils::cairo::unique_ptr<T> = utils::generic_unique_ptr<T, (unspecified)>
+
+    Smart pointer type that asserts unique ownership to a cairo object.
+*/
 UTILS_DEF_SMART_PTR_ALIAS(unique, xx_impl::CairoDellocator)
+
+/**
+.. type:: type utils::cairo::shared_ptr<T> = utils::generic_shared_ptr<T, (unspecified)>
+
+    Smart pointer type that asserts shared ownership to a cairo object.
+*/
 UTILS_DEF_SMART_PTR_ALIAS(shared, xx_impl::CairoDellocator)
 
 }}

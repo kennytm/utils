@@ -8,8 +8,71 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 
-#ifndef MEMORY_DIRECTFB_HPP_R59TAE5TTV
-#define MEMORY_DIRECTFB_HPP_R59TAE5TTV
+/**
+
+``<utils/ext/directfb.hpp>`` --- DirectFB RAII and Exception Handling Support
+=============================================================================
+
+This module overrides the default deleter for DirectFB interfaces, to provide
+:term:`RAII` via the ``utils::directfb::unique_ptr<T>`` and
+``utils::directfb::shared_ptr<T>`` :term:`smart pointer`\ s, without providing
+an explicit deleter.
+
+It also overrides the bitwise operators for DirectFB flags, so that they can be
+combined safely without using ``static_cast``.
+
+Finally, it provides convenient functions to check and convert error codes into
+exceptions.
+
+Synopsis
+--------
+
+Usage::
+
+    #include <memory>
+    #include <directfb.h>
+    #include <utils/ext/directfb.hpp>
+
+    using utils::directfb::checked;
+
+    utils::directfb::unique_ptr<IDirectFBSurface> create_PNG_surface(IDirectFB* context,
+                                                                     const std::string& filename)
+    {
+        IDirectFBImageProvider* raw_provider;
+        // 'checked' will throw if the return value is not DFB_OK
+        checked(context->CreateImageProvider(context, filename.c_str(), &raw_provider));
+        // this allows the 'raw_provider' to be Release'd when the scope exits
+        utils::directfb::unique_ptr<IDirectFBImageProvider> provider (raw_provider);
+        ...
+    }
+
+    void render_PNG_image(IDirectFB* context, const std::string& filename)
+    {
+        utils::directfb::unique_ptr<IDirectFBSurface> png_surface;
+        try
+        {
+            png_surface = std::move(create_PNG_surface(context, filename));
+        }
+        catch(const utils::directfb::exception& exc)
+        {
+            // we can get back the error code from the public member.
+            if (exc.error_code != DFB_FILENOTFOUND)
+            {
+                throw;
+            }
+            else
+            {
+                printf("File not found: %s\n", filename.c_str());
+                return;
+            }
+        }
+        ...
+    }
+
+*/
+
+#ifndef EXT_DIRECTFB_HPP_R59TAE5TTV
+#define EXT_DIRECTFB_HPP_R59TAE5TTV
 
 #include <directfb.h>
 #include "../memory.hpp"
@@ -87,6 +150,11 @@ IMPLEMENT_ENUM_BITWISE_OPERATORS(
 
 namespace utils { namespace directfb {
 
+/**
+Members
+-------
+*/
+
 namespace xx_impl
 {
     struct DirectFBDeallocator
@@ -105,12 +173,35 @@ namespace xx_impl
     };
 }
 
+/**
+.. type:: type utils::directfb::unique_ptr<T> = utils::generic_unique_ptr<T, (unspecified)>
+
+    Smart pointer type that asserts unique ownership to a DirectFB interface.
+*/
 UTILS_DEF_SMART_PTR_ALIAS(unique, xx_impl::DirectFBDeallocator)
+
+/**
+.. type:: type utils::directfb::shared_ptr<T> = utils::generic_shared_ptr<T, (unspecified)>
+
+    Smart pointer type that asserts shared ownership to a DirectFB interface.
+*/
 UTILS_DEF_SMART_PTR_ALIAS(shared, xx_impl::DirectFBDeallocator)
 
+/**
+.. type:: class utils::directfb::exception : public std::exception
+
+    The base exception raised by DirectFB functions.
+*/
 class exception : public std::exception
 {
 public:
+    /**
+    .. data:: DFBResult error_code
+
+        The error code associated with this exception. A list of error codes can
+        be found in `the DirectFB documentation
+        <http://directfb.org/docs/DirectFB_Reference_1_5/types.html#DFBResult>`_.
+    */
     DFBResult error_code;
 
     explicit exception(DFBResult error_code_) : error_code(error_code_) {}
@@ -121,15 +212,50 @@ public:
     }
 };
 
+/**
+.. function:: static inline void utils::directfb::checked(DFBResult error_code)
+
+    A convenient function wrapped around DirectFB functions that may return an
+    error code. If the *error_code* is not DFB_OK, a
+    :type:`utils::directfb::exception` will be thrown.
+*/
 static inline void checked(DFBResult error_code)
 {
     if (error_code != DFB_OK)
         throw exception(error_code);
 }
 
+/**
+.. type:: class utils::directfb::lock final
+
+    This class is a RAII type to provide direct bytes access to a DirectFB
+    surface. This mainly a wrapper around the ``Lock`` and ``Unlock`` methods.
+    For example::
+
+        utils::directfb::unique_ptr<IDirectFBSurface> surface (...);
+
+        {
+            utils::directfb::lock lck (surface.get());
+
+            unsigned char* data = lck.data();
+            // Get the raw bytes of the surface.
+
+            // make the first column of the surface transparent (assuming ARGB).
+            for (int i = 0; i < height_of_surface; ++ i)
+            {
+                int offset = i * lck.stride();
+                memset(data + offset, 0, 4);
+            }
+        }
+*/
 class lock
 {
 public:
+    /**
+    .. function:: explicit lock(IDirectFBSurface* surface, DFBSurfaceLockFlags flags = DSLF_READ|DSLF_WRITE)
+
+        Lock the surface for direct access.
+    */
     explicit lock(IDirectFBSurface* surface,
                   DFBSurfaceLockFlags flags = DSLF_READ|DSLF_WRITE)
         : _surface(surface), _ptr(nullptr), _pitch(0)
@@ -137,6 +263,11 @@ public:
         checked(surface->Lock(surface, flags, &_ptr, &_pitch));
     }
 
+    /**
+    .. function:: ~lock()
+
+        Unlock the surface.
+    */
     ~lock()
     {
         _surface->Unlock(_surface);
@@ -153,11 +284,21 @@ public:
     // ^ allow only stack allocation from the constructor.
     //   (which allows us to store the raw pointer instead of a shared_ptr)
 
+    /**
+    .. function:: unsigned char* data() const noexcept
+
+        Get the raw bytes data associated with the surface.
+    */
     unsigned char* data() const noexcept
     {
         return static_cast<unsigned char*>(_ptr);
     }
 
+    /**
+    .. function:: int stride() const noexcept
+
+        Get the row stride (a.k.a. pitch) for the raw bytes data of the surface.
+    */
     int stride() const noexcept
     {
         return _pitch;

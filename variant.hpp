@@ -7,6 +7,68 @@
 //    (See accompanying file doc/LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+/**
+
+``<utils/variant.hpp>`` --- Tagged union
+========================================
+
+This module provides the :type:`utils::variant` type, which stores tagged union
+of objects (also known as discriminated union or sum type).
+
+This is mainly a rewrite of `boost::variant
+<http://www.boost.org/doc/libs/1_47_0/doc/html/variant.html>`_ for C++11 support.
+
+:type:`utils::variant` support the following features over ``boost::variant``:
+
+* Proper move semantics
+* Stricter, compile-time type checking
+
+but it also has some features not present in :type:`utils::variant`, and will
+likely not be supported here:
+
+* Recursive variant
+* Reference members
+* `Boost.MPL <http://www.boost.org/doc/libs/1_47_0/libs/mpl/doc/index.html>`_
+* C++03, and support for compilers other than gcc ≥4.6 (and clang when its C++11
+  support becomes better).
+
+Synopsis
+--------
+
+::
+
+    #include <cstdio>
+    #include <vector>
+    #include <utils/variant.hpp>
+
+    class print_content_visitor : public utils::static_visitor<void>
+    {
+    public:
+        void operator()(const std::vector<int>& vec) const
+        {
+            for (int val : vec)
+                printf("%d\n", val);
+        }
+
+        void operator()(const std::string& str) const
+        {
+            printf("[%s]\n", str.c_str());
+        }
+    };
+
+    int main()
+    {
+        std::vector<int> v {8, 9, 10, 12, 18, 24, 36, 48, 64, 72, 96};
+
+        utils::variant<std::vector<int>, std::string> u = std::move(v);
+
+        utils::apply_visitor(print_content_visitor(), u);
+
+        return 0;
+    }
+
+*/
+
 #ifndef VARIANT_HPP_XMPYUK9CBNN
 #define VARIANT_HPP_XMPYUK9CBNN
 
@@ -39,6 +101,19 @@ namespace utils {
 
 namespace utils {
 
+/**
+Members
+-------
+*/
+
+    /**
+    .. type:: class utils::variant<T...> final
+        :default_constructible:
+        :movable:
+        :copyable:
+
+        The tagged union type.
+    */
     template <typename... T>
     class variant
     {
@@ -73,6 +148,12 @@ namespace utils {
         }
 
     public:
+        /**
+        .. function:: variant()
+
+            Construct a new variant type and initialize with the default value
+            of the first type in *T*.
+        */
         variant() : _index(0)
         {
             new(&_storage.head) decltype(_storage.head);
@@ -405,6 +486,13 @@ namespace utils {
         bool operator<=(const U& a) const { return !(*this > a); }
 
 #if !defined(BOOST_NO_TYPEID)
+        /**
+        .. function:: const std::type_info& type() const noexcept
+
+            Returns the typeid of the currently active member. This function
+            will not be available if you define BOOST_NO_TYPEID before including
+            this header.
+        */
         const std::type_info& type() const noexcept
         {
             xx_impl::typeid_visitor tv;
@@ -434,25 +522,41 @@ namespace utils {
         friend class variant;
     };
 
+    /**
+    .. function:: VisitorType::result_type utils::apply_visitor<VisitorType, T...>(VisitorType visitor, const utils::variant<T...>& var)
+                  VisitorType::result_type utils::apply_visitor<VisitorType, T...>(VisitorType visitor, utils::variant<T...>& var)
+
+        Perform an operation on the variant. The *visitor* must be a function
+        object that accepts every possible type of *T*, and has the same return
+        type for all overloads, which must be reported as
+        ``VisitorType::result_type``. You could use the
+        :type:`~utils::static_visitor` to ensure this.
+    */
     template <typename SV, typename V>
     typename SV::result_type apply_visitor(SV& visitor, V&& variant)
     {
         return xx_impl::apply(variant._storage, variant._index, visitor);
     }
-
-    template <typename SV, typename V1, typename V2>
-    typename SV::result_type apply_visitor(SV& visitor, V1&& variant1, V2&& variant2)
-    {
-        return xx_impl::apply2(variant1._storage, variant1._index,
-                               variant2._storage, variant2._index, visitor);
-    }
-
     template <typename SV, typename V>
     typename SV::result_type apply_visitor(SV&& visitor, V&& variant)
     {
         return xx_impl::apply(variant._storage, variant._index, visitor);
     }
 
+    /**
+    .. function:: VisitorType::result_type utils::apply_visitor<VisitorType, T..., U...>(VisitorType visitor, const utils::variant<T...>& var1, const utils::variant<U...>& var2)
+                  VisitorType::result_type utils::apply_visitor<VisitorType, T..., U...>(VisitorType visitor, utils::variant<T...>& var1, const utils::variant<U...>& var2)
+                  VisitorType::result_type utils::apply_visitor<VisitorType, T..., U...>(VisitorType visitor, const utils::variant<T...>& var1, utils::variant<U...>& var2)
+                  VisitorType::result_type utils::apply_visitor<VisitorType, T..., U...>(VisitorType visitor, utils::variant<T...>& var1, utils::variant<U...>& var2)
+
+        Perform double visitation on a pair of variants.
+    */
+    template <typename SV, typename V1, typename V2>
+    typename SV::result_type apply_visitor(SV& visitor, V1&& variant1, V2&& variant2)
+    {
+        return xx_impl::apply2(variant1._storage, variant1._index,
+                               variant2._storage, variant2._index, visitor);
+    }
     template <typename SV, typename V1, typename V2>
     typename SV::result_type apply_visitor(SV&& visitor, V1&& variant1, V2&& variant2)
     {
@@ -460,12 +564,25 @@ namespace utils {
                                variant2._storage, variant2._index, visitor);
     }
 
+    /**
+    .. function:: auto utils::apply_visitor<VisitorType>(VisitorType visitor)
+
+        Return a function object that will perform single or double visitation
+        when called. In Boost this is known as *delayed visitation*.
+    */
     template <typename SV>
     xx_impl::delayed_visitor<SV> apply_visitor(SV& visitor)
     {
         return xx_impl::delayed_visitor<SV>(visitor);
     }
 
+    /**
+    .. function:: U* utils::get<U, T...>(utils::variant<T...>* var_ptr) noexcept
+                  const U* utils::get<U, T...>(const utils::variant<T...>* var_ptr) noexcept
+
+        Obtain a pointer to *U* if the variant's active member is really of type
+        *U*. Return ``nullptr`` if not.
+    */
     template <typename U, typename... T>
     U* get(variant<T...>* v) noexcept
     {
@@ -494,11 +611,24 @@ namespace utils {
             return nullptr;
     }
 
+    /**
+    .. type:: class utils::bad_get : public std::exception
+
+        This exception is thrown when trying to :func:`~utils::get` a reference
+        from a variant that does not have the required type.
+    */
     class bad_get : public std::exception {
     public:
         virtual const char* what() const noexcept { return "bad_get"; }
     };
 
+    /**
+    .. function:: U& utils::get<U, T...>(utils::variant<T...>& var)
+                  const U& utils::get<U, T...>(const utils::variant<T...>& var)
+
+        Obtain a reference to *U* if the variant's active member is really of
+        type *U*. Throws a :type:`~utils::bad_get` exception if not.
+    */
     template <typename U, typename... T>
     U& get(variant<T...>& v)
     {

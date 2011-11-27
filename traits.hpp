@@ -7,6 +7,16 @@
 //    (See accompanying file doc/LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+/**
+
+``<utils/traits.hpp>`` --- Additional type traits
+=================================================
+
+This module provides additional type traits and related functions, missing from
+the standard library.
+
+*/
+
 #ifndef TRAITS_HPP_9ALQFEFX7TO
 #define TRAITS_HPP_9ALQFEFX7TO 1
 
@@ -17,6 +27,23 @@
 
 namespace utils {
 
+/**
+.. macro:: DECLARE_HAS_TYPE_MEMBER(member_name)
+
+    This macro declares a template ``has_member_name`` which will check whether
+    a type member ``member_name`` exists in a particular type.
+
+    Example::
+
+        DECLARE_HAS_TYPE_MEMBER(result_type)
+
+        ...
+
+        printf("%d\n", has_result_type< std::plus<int> >::value);
+        // ^ prints '1' (true)
+        printf("%d\n", has_result_type< double(*)() >::value);
+        // ^ prints '0' (false)
+*/
 #define DECLARE_HAS_TYPE_MEMBER(member_name) \
     template <typename, typename = void> \
     struct has_##member_name \
@@ -25,6 +52,22 @@ namespace utils {
     struct has_##member_name<T, typename std::enable_if<sizeof(typename T::member_name)||true>::type> \
     { enum { value = true }; };
 
+/**
+.. type:: struct utils::function_traits<F>
+
+    Obtain compile-time information about a function object *F*.
+
+    This template currently supports the following types:
+
+    * Normal function types (``R(T...)``), function pointers (``R(*)(T...)``)
+      and function references (``R(&)(T...)`` and ``R(&&)(T...)``).
+    * Member functions (``R(C::*)(T...)``)
+    * ``std::function<F>``
+    * Type of lambda functions, and any other types that has a unique
+      ``operator()``.
+    * Type of ``std::mem_fn`` (only for GCC's libstdc++ and LLVM's libc++).
+      Following the C++ spec, the first argument will be a raw pointer.
+*/
 template <typename T>
 struct function_traits
     : public function_traits<decltype(&T::operator())>
@@ -33,9 +76,25 @@ struct function_traits
 template <typename ReturnType, typename... Args>
 struct function_traits<ReturnType(Args...)>
 {
-    enum { arity = sizeof...(Args) };
+    /**
+    .. type:: type result_type
+
+        The type returned by calling an instance of the function object type *F*.
+    */
     typedef ReturnType result_type;
 
+    /**
+    .. data:: static const size_t arity
+
+        Number of arguments the function object will take.
+    */
+    enum { arity = sizeof...(Args) };
+
+    /**
+    .. type:: type arg<n>::type
+
+        The type of the *n*-th argument.
+    */
     template <size_t i>
     struct arg
     {
@@ -130,6 +189,17 @@ struct function_traits<MEM_FN_SYMBOL_XX0SL7G4Z0J<R(C::*)(A...) const volatile>>
         typename std::remove_reference<T>::type&& \
     >::type
 
+/**
+.. function:: auto utils::forward_like<Like, T>(T&& t) noexcept
+
+    Forward the reference *t* like the type of *Like*. That means, if *Like* is
+    an lvalue (reference), this function will return an lvalue reference of *t*.
+    Otherwise, if *Like* is an rvalue, this function will return an rvalue
+    reference of *t*.
+
+    This is mainly used to propagate the expression category (lvalue/rvalue) of
+    a member of *Like*, generalizing ``std::forward``.
+*/
 template <typename R, typename T>
 FORWARD_RES_8QR485JMSBT forward_like(T&& input) noexcept
 {
@@ -138,6 +208,12 @@ FORWARD_RES_8QR485JMSBT forward_like(T&& input) noexcept
 
 #undef FORWARD_RES_8QR485JMSBT
 
+/**
+.. type:: struct utils::copy_cv<From, To>
+
+    Copy the CV qualifier between the two types. For example,
+    ``utils::copy_cv<const int, double>::type`` will become ``const double``.
+*/
 template <typename From, typename To>
 struct copy_cv
 {
@@ -146,13 +222,29 @@ private:
     typedef typename std::conditional<std::is_const<From>::value,
                                       const raw_To, raw_To>::type const_raw_To;
 public:
+    /**
+    .. type:: type type
+
+        Result of cv-copying.
+    */
     typedef typename std::conditional<std::is_volatile<From>::value,
                                       volatile const_raw_To, const_raw_To>::type type;
 };
 
+/**
+.. type:: struct utils::pointee<T>
+
+    Returns the type by derefering an instance of *T*. This is a generalization
+    of ``std::remove_pointer``, that it also works with iterators.
+*/
 template <typename T>
 struct pointee
 {
+    /**
+    .. type:: type type
+
+        Result of dereferencing.
+    */
     typedef typename std::remove_reference<decltype(*std::declval<T>())>::type type;
 };
 

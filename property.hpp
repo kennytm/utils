@@ -7,6 +7,74 @@
 //    (See accompanying file doc/LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+/**
+
+``<utils/property.hpp>`` --- Lightweight properties
+===================================================
+
+This module provides a light-weight `property
+<http://en.wikipedia.org/wiki/Property_%28programming%29>`_ objects to C++.
+Adding a property only adds 1 extra byte to the class's size at the end (not
+including the alignment), and the property access should be all inlined down to
+the original getter and setter.
+
+Synopsis
+--------
+
+Declaring::
+
+    #include <cmath>
+    #include <utils/property.hpp>
+
+    struct my_complex
+    {
+        double re;
+        double im;
+
+        my_complex(double re_, double im_) noexcept : re(re_), im(im_) {}
+
+        // First, define the conventional getters and setters.
+        double get_abs() const noexcept
+        {
+            return hypot(re, im);
+        }
+        void set_abs(double new_abs) noexcept
+        {
+            double ratio = new_abs / get_abs();
+            re *= ratio;
+            im *= ratio;
+        }
+
+        double get_arg() const noexcept
+        {
+            return atan2(im, re);
+        }
+        void set_arg(double new_arg) noexcept
+        {
+            double cur_abs = get_abs();
+            re = cur_abs * cos(new_arg);
+            im = cur_abs * sin(new_arg);
+        }
+
+        // Then, declare the properties
+        UTILS_PROPERTIES(my_complex, im)
+        {
+            declprop::read_write_byval<double, &my_complex::get_abs, &my_complex::set_abs> abs;
+            declprop::read_write_byval<double, &my_complex::get_arg, &my_complex::set_arg> arg;
+        };
+    };
+
+Using (similar to normal variables)::
+
+    my_complex z (3, 4);
+    std::cout << "Polar: " << z.abs << ", " << z.arg << std::endl;
+    // ^ prints: "Polar: 5, 0.927295"
+    z.abs = 20;
+    std::cout << "New z: " << z.re << ", " << z.im << std::endl;
+    // ^ prints: "New z: 12, 16"
+
+*/
+
 #ifndef PROPERTY_HPP_K8TCXM1VK5M
 #define PROPERTY_HPP_K8TCXM1VK5M 1
 
@@ -15,6 +83,11 @@
 #include "traits.hpp"
 
 namespace utils {
+
+/**
+Members
+-------
+*/
 
 namespace xx_impl
 {
@@ -162,6 +235,19 @@ class property_store_empty
 
 }
 
+/**
+.. macro:: UTILS_PROPERTIES(ClassName, last_member)
+
+    This macro sets up all necessary environment to allow properties to be
+    declared. Inside the scope it created, you could create the properties using
+    the declaration ``declprop::xxxx<T, functions...> property_name;``, where
+    ``declprop`` is a typedef of an appropriate :type:`~utils::property_store`.
+
+    .. warning::
+        The *last_member* **must** be the data member just preceding the
+        invocation of this macro. Otherwise, the properties will not work (and
+        will likely crash the program).
+*/
 #define UTILS_PROPERTIES(ClassName, last_member) \
     private: \
         typedef ::utils::property_store<ClassName, \
@@ -170,11 +256,73 @@ class property_store_empty
     public: \
         union
 
+/**
+.. macro:: UTILS_PROPERTIES_FOR_EMPTY_CLASS(ClassName)
+
+    Similar as :macro:`UTILS_PROPERTIES`, but is for **non-virtual** empty
+    classes which has no data members. The ``declprop`` will be aliased to
+    :type:`~utils::property_store_empty`.
+*/
 #define UTILS_PROPERTIES_FOR_EMPTY_CLASS(ClassName) \
     private: \
         typedef ::utils::property_store_empty<ClassName> declprop; \
     public: \
         union
+
+/**
+.. type:: class utils::property_store<Owner, U, U Owner::* last_member> final
+          class utils::property_store_empty<Owner> final
+    :pod:
+
+    These classes are type containers to various property types. These store
+    classes provide a way for the property type to automatically determine the
+    address of the owner (via pointer arithmetic involving the *last_member*).
+
+    .. type:: struct read_only<T, T (Owner::* getter)() const> final
+
+        Creates a read-only property of type *T*. When the property is accessed
+        as an *T*, the *getter* will be invoked.
+
+    .. type:: struct write_only<T, void (Owner::* setter)(T)> final
+
+        Creates a write-only property of type *T*. When the property is assigned,
+        the *setter* will be invoked.
+
+    .. type:: struct read_write_byval<T, T (Owner::* getter)() const, void (Owner::* setter)(T)> final
+
+        Creates a read-write property passed by value.
+
+    .. type:: struct read_write_byval<T, T (Owner::* getter)() const, void (Owner::* setter)(const T&)> final
+
+        Creates a read-write property passed by const reference.
+
+    .. type:: struct read_write_movable<T, T (Owner::* getter)() const, void (Owner::* copy_setter)(const T&), void (Owner::* move_setter)(T&&)> final
+
+        Creates a read-write property passed by reference, and with a
+        move-assignment setter as well.
+*/
+
+/**
+
+Caveats
+-------
+
+C++ does not have native support of properties. This module can provide a very
+good simulation, but after all it is just a simulation. Using properties may
+have some unexpected consequences that the user may need to be aware of.
+
+* Since properties are implemented as data members in a union, the class's
+  braced initializer list will not work properly (e.g. in above you cannot write
+  ``my_complex z = {3, 4};``).
+* Properties can be implicitly converted to its type, but that does not mean the
+  property *has* that type. You may need to explicitly cast it to the desired
+  type in some variadic or template functions (e.g.
+  ``printf("%g", static_cast<double>(z.abs));``).
+* Member access (``a.x``) will not work.
+* ``++`` and ``--`` are not supported yet. Use ``+= 1`` and ``-= 1`` if needed.
+* ``auto`` cannot be used to receive a property value.
+
+*/
 
 #endif
 
