@@ -75,6 +75,7 @@ Usage::
 #define EXT_DIRECTFB_HPP_R59TAE5TTV
 
 #include <directfb.h>
+#include <directfb_water.h>
 #include "../memory.hpp"
 #include "../boilerplates.hpp"
 
@@ -137,14 +138,14 @@ IMPLEMENT_ENUM_BITWISE_OPERATORS(
     (DFBStreamCapabilities)
     (DFBInputDeviceLockState)
 /*  (DFBGL2ContextDescriptionFlags)
-    (DFBGL2ContextCapabilities)
+    (DFBGL2ContextCapabilities) */
     (WaterTransformFlags)
     (WaterTransformType)
     (WaterRenderMode)
     (WaterPaintOptions)
     (WaterElementFlags)
     (WaterShapeFlags)
-    (DFBWindowConfigFlags)
+/*  (DFBWindowConfigFlags)
     (DFBWindowStateFlags) */
 )
 
