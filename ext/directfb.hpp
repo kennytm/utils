@@ -75,7 +75,10 @@ Usage::
 #define EXT_DIRECTFB_HPP_R59TAE5TTV
 
 #include <directfb.h>
+#if D_DECLARE_INTERFACE
+#define HAS_WATER_3VQ5DJV0B
 #include <directfb_water.h>
+#endif
 #include "../memory.hpp"
 #include "../boilerplates.hpp"
 
@@ -139,15 +142,21 @@ IMPLEMENT_ENUM_BITWISE_OPERATORS(
     (DFBInputDeviceLockState)
 /*  (DFBGL2ContextDescriptionFlags)
     (DFBGL2ContextCapabilities) */
+/*  (DFBWindowConfigFlags)
+    (DFBWindowStateFlags) */
+)
+
+#if HAS_WATER_3VQ5DJV0B
+IMPLEMENT_ENUM_BITWISE_OPERATORS(
     (WaterTransformFlags)
     (WaterTransformType)
     (WaterRenderMode)
     (WaterPaintOptions)
     (WaterElementFlags)
     (WaterShapeFlags)
-/*  (DFBWindowConfigFlags)
-    (DFBWindowStateFlags) */
 )
+#endif
+
 
 namespace utils { namespace directfb {
 
