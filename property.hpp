@@ -111,6 +111,16 @@ namespace xx_impl
         DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, >>) \
         DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, <<)
 
+    // declare the protected structors to avoid the user accidentally using
+    // 'auto xxxx = property' and receives garbage.
+    #define DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(ThisType) \
+        protected: \
+            ThisType(ThisType&&) = default; \
+            ThisType(const ThisType&) = default; \
+            ThisType& operator=(ThisType&&) = default; \
+            ThisType& operator=(const ThisType&) = default; \
+            friend Owner;
+
     template <typename Owner, typename OwnerPtrConvertor>
     struct generic_property_store
     {
@@ -138,6 +148,12 @@ namespace xx_impl
                 static_assert(std::is_pointer<T>::value, "Cannot call -> on non-pointers");
                 return static_cast<T>(*this);
             }
+
+            /* Note to user: If you see an 'error: ... is protected' here, it
+               means you have tried to use 'auto' with a property. It does not
+               work in C++. Please declare with explicit type.
+             */
+            DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(read_only)
         };
 
         template <typename T, void (Owner::*setter)(T)>
@@ -148,6 +164,8 @@ namespace xx_impl
                 (OwnerPtrConvertor()(this)->*setter)(std::forward<T>(value));
                 return *this;
             }
+
+            DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(write_only)
         };
 
         template <typename T, T (Owner::*getter)() const, void (Owner::*setter)(T)>
@@ -157,6 +175,12 @@ namespace xx_impl
         {
             using write_only<T, setter>::operator=;
             DECLARE_ALL_COMPOUND_OPS_P6V6HIRH89(read_write_byval)
+
+            /* Note to user: If you see an 'error: ... is protected' here, it
+               means you have tried to use 'auto' with a property. It does not
+               work in C++. Please declare with explicit type.
+             */
+            DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(read_write_byval)
         };
 
         template <typename T, T (Owner::*getter)() const, void (Owner::*setter)(const T&)>
@@ -166,6 +190,12 @@ namespace xx_impl
         {
             using write_only<const T&, setter>::operator=;
             DECLARE_ALL_COMPOUND_OPS_P6V6HIRH89(read_write_byref)
+
+            /* Note to user: If you see an 'error: ... is protected' here, it
+               means you have tried to use 'auto' with a property. It does not
+               work in C++. Please declare with explicit type.
+             */
+            DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(read_write_byref)
         };
 
         template <typename T, T (Owner::*getter)() const,
@@ -179,12 +209,19 @@ namespace xx_impl
             using write_only<const T&, copy_setter>::operator=;
             using write_only<T&&, move_setter>::operator=;
             DECLARE_ALL_COMPOUND_OPS_P6V6HIRH89(read_write_movable)
+
+            /* Note to user: If you see an 'error: ... is protected' here, it
+               means you have tried to use 'auto' with a property. It does not
+               work in C++. Please declare with explicit type.
+             */
+            DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(read_write_movable)
         };
 
     };
 
     #undef DECLARE_OP_AP7B0QH2PC
     #undef DECLARE_ALL_COMPOUND_OPS_P6V6HIRH89
+    #undef DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU
 
     template <typename Owner, typename U, U Owner::* last_member>
     class owner_ptr_convertor_with_offset
@@ -278,25 +315,25 @@ class property_store_empty
     classes provide a way for the property type to automatically determine the
     address of the owner (via pointer arithmetic involving the *last_member*).
 
-    .. type:: struct read_only<T, T (Owner::* getter)() const> final
+    .. type:: struct read_only<T, T (Owner::* getter)() const>
 
         Creates a read-only property of type *T*. When the property is accessed
         as an *T*, the *getter* will be invoked.
 
-    .. type:: struct write_only<T, void (Owner::* setter)(T)> final
+    .. type:: struct write_only<T, void (Owner::* setter)(T)>
 
         Creates a write-only property of type *T*. When the property is assigned,
         the *setter* will be invoked.
 
-    .. type:: struct read_write_byval<T, T (Owner::* getter)() const, void (Owner::* setter)(T)> final
+    .. type:: struct read_write_byval<T, T (Owner::* getter)() const, void (Owner::* setter)(T)>
 
         Creates a read-write property passed by value.
 
-    .. type:: struct read_write_byval<T, T (Owner::* getter)() const, void (Owner::* setter)(const T&)> final
+    .. type:: struct read_write_byval<T, T (Owner::* getter)() const, void (Owner::* setter)(const T&)>
 
         Creates a read-write property passed by const reference.
 
-    .. type:: struct read_write_movable<T, T (Owner::* getter)() const, void (Owner::* copy_setter)(const T&), void (Owner::* move_setter)(T&&)> final
+    .. type:: struct read_write_movable<T, T (Owner::* getter)() const, void (Owner::* copy_setter)(const T&), void (Owner::* move_setter)(T&&)>
 
         Creates a read-write property passed by reference, and with a
         move-assignment setter as well.
