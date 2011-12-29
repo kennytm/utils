@@ -141,6 +141,8 @@ BOOST_AUTO_TEST_CASE(movable)
         Checker& operator=(const Checker&) { copied = true; return *this; }
 
         Checker() : moved(false), copied(false) {}
+        Checker(const Checker&) : moved(false), copied(true) {}
+        Checker(Checker&&) : moved(true), copied(false) {}
     };
 
     struct Container

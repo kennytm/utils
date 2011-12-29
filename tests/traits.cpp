@@ -82,7 +82,8 @@ BOOST_AUTO_TEST_CASE(member_pointer_test_case)
         short p(const char*) noexcept;
         unsigned int q(std::pair<int, int>, int) const volatile throw();
         bool operator==(const S&) const;
-        virtual void r() volatile {};
+        virtual void r() volatile {}
+        virtual ~S() {}
     };
 
     typedef function_traits<decltype(&S::p)> FTp;

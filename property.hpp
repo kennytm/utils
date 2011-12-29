@@ -115,6 +115,7 @@ namespace xx_impl
     // 'auto xxxx = property' and receives garbage.
     #define DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(ThisType) \
         protected: \
+            ThisType() = default; \
             ThisType(ThisType&&) = default; \
             ThisType(const ThisType&) = default; \
             ThisType& operator=(ThisType&&) = default; \
