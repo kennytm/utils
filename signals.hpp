@@ -21,6 +21,53 @@ before including the header:
 
 * ``#define UTILS_SIGNALS_BACKEND_LIBSIGC`` -- Use libsigc++ as backend
 
+Synopsis
+--------
+
+Defining a signal is simply adding a data member::
+
+    #include <utils/signals.hpp>
+
+    class Controller
+    {
+    public:
+        utils::signal<void(int x, int y)> on_mouse_move;
+        utils::signal<void(int x, int y)> on_touch_move;
+
+        void move_touch_to(int x, int y) const;
+    };
+
+Connecting slots to a signal::
+
+    int main()
+    {
+        Controller controller;
+
+        // Connecting a function to a slot.
+        controller.on_touch_move += [](int x, int y)
+        {
+            printf("Finger moved to %d %d\n", x, y);
+        };
+        controller.on_mouse_move += [](int x, int y)
+        {
+            printf("Mouse moved to %d %d\n", x, y);
+        };
+
+        // Forward the signal to another signal.
+        controller.on_touch_move += controller.on_mouse_move;
+
+        controller.move_touch_to(1, 2);
+
+        return 0;
+    }
+
+Emitting a singal::
+
+    void Controller::move_touch_to(int x, int y) const
+    {
+        on_touch_move.emit(x, y);
+    }
+
 */
 
 #include <type_traits>
@@ -99,12 +146,12 @@ struct signal
     { return connect(std::forward<T>(slot)); }
 
     /**
-    .. function:: auto emit<A...>(A&&... args)
+    .. function:: auto emit<A...>(A&&... args) const
 
         Emit the signal.
     */
     template <typename... A>
-    typename std::result_of<F>::type emit(A&&... args);
+    typename std::result_of<F>::type emit(A&&... args) const;
 };
 
 }

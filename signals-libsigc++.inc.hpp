@@ -42,6 +42,10 @@ private:
     sigc::signal<R, Args...> _signal;
 
 public:
+    template <typename F>
+    slot_connection connect(signal<F>& another_signal)
+    { return slot_connection(_signal.connect(another_signal._signal)); }
+
     template <typename T>
     slot_connection connect(T&& slot)
     { return slot_connection(_signal.connect(std::forward<T>(slot))); }
@@ -50,7 +54,7 @@ public:
     slot_connection operator+=(T&& slot)
     { return connect(std::forward<T>(slot)); }
 
-    R emit(Args... args)
+    R emit(Args... args) const
     { return _signal.emit(std::forward<Args>(args)...); }
 };
 
