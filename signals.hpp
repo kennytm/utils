@@ -19,7 +19,15 @@ The module is mainly used as a backend-independent interop layer for signals and
 slots in C++. Users may choose between different backends by defining a macro
 before including the header:
 
-* ``#define UTILS_SIGNALS_BACKEND_LIBSIGC`` -- Use libsigc++ as backend
+* ``#define UTILS_SIGNALS_BACKEND_LIBSIGC``
+
+    * Use `libsigc++ <http://libsigc.sourceforge.net/>` as backend (not
+      thread-safe)
+
+* ``#define UTILS_SIGNALS_BACKEND_SINGLE_THREADED``
+
+    * Use a backend defined in this library using standard C++11 for
+      single-threaded environment (not thread-safe)
 
 Synopsis
 --------
@@ -74,6 +82,8 @@ Emitting a singal::
 
 #if defined(UTILS_SIGNALS_BACKEND_LIBSIGC)
 #include "signals-libsigc++.inc.hpp"
+#elif defined(UTILS_SIGNALS_BACKEND_SINGLE_THREADED)
+#include "signals-single_threaded.inc.hpp"
 #else
 #error Please define one of the following: UTILS_SIGNALS_BACKEND_LIBSIGC
 
@@ -81,6 +91,9 @@ namespace utils {
 
 /**
 .. type:: struct utils::slot_connection<F>
+    :default_constructible:
+    :movable:
+    :noncopyable:
 
     This structure represents a signal-slot connection.
 */
@@ -89,7 +102,9 @@ struct slot_connection
     /**
     .. function:: void disconnect()
 
-        Disconnect the signal from the slot.
+        Disconnect the signal from the slot. After calling this method, the slot
+        will become invalid, and all mutating methods in this instance will
+        become no-op.
     */
     void disconnect();
 
@@ -123,9 +138,21 @@ struct slot_connection
 };
 
 /**
-.. type:: struct utils::signal<F>
+.. type:: struct utils::signal<R(A...)>
+    :default_constructible:
+    :movable:
+    :copyable:
 
-    Declare a signal which works like a function of type *F*.
+    Declare a signal which works like a function accepting arguments *A* and
+    returning *R*. The return type *R* should be either ``void`` or a
+    default-constructible type.
+
+    Multiple function objects with signature compatible with *R(A...)* can be
+    connected to a single signal. When the signal is emitted, all these
+    connected function objects will be called with the same argument.
+
+    If the return type *R* of this signal is not ``void``, the return value of
+    the last connected and active function will be used.
 */
 template <typename F>
 struct signal
@@ -146,12 +173,12 @@ struct signal
     { return connect(std::forward<T>(slot)); }
 
     /**
-    .. function:: auto emit<A...>(A&&... args) const
+    .. function:: R emit(A... args) const
 
         Emit the signal.
     */
-    template <typename... A>
-    typename std::result_of<F>::type emit(A&&... args) const;
+    template <typename... Args>
+    typename std::result_of<F>::type emit(Args&&... args) const;
 };
 
 }

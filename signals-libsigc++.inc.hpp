@@ -2,6 +2,7 @@
 #define SINGALS_LIBSIGC_INC_HPP_MHA3KVRSUWG 1
 
 #include <utility>
+#include <type_traits>
 #include <sigc++/sigc++.h>
 #include <utils/traits.hpp>
 
@@ -42,8 +43,7 @@ private:
     sigc::signal<R, Args...> _signal;
 
 public:
-    template <typename F>
-    slot_connection connect(signal<F>& another_signal)
+    slot_connection connect(signal& another_signal)
     { return slot_connection(_signal.connect(another_signal._signal)); }
 
     template <typename T>

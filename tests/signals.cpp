@@ -41,5 +41,16 @@ BOOST_AUTO_TEST_CASE(doc_test)
     BOOST_CHECK_EQUAL(d, 6);
 }
 
+BOOST_AUTO_TEST_CASE(slot_connection_ctor_and_const_test)
+{
+    utils::slot_connection conn;
+    utils::slot_connection conn2 (std::move(conn));
+    utils::slot_connection conn3;
+    conn3 = std::move(conn2);
+    const utils::slot_connection conn4;
+    BOOST_CHECK(!conn4.is_connected());
+    BOOST_CHECK(conn4.is_suspended());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
