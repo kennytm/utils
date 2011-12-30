@@ -114,14 +114,15 @@ public:
 };
 
 /**
-.. function:: inline int utils::posix::checked(int result)
+.. function:: inline T utils::posix::checked(T result)
 
     Check if a POSIX function is completed successfully. If the *result* is
     negative (usually meaning an unsuccessful call), a
     :type:`utils::posix::exception` with the current errno will be thrown.
     Otherwise, the code will be returned unmodified.
 */
-static inline int checked(int retcode)
+template <typename T>
+inline T checked(T retcode)
 {
     if (retcode < 0)
         throw utils::posix::exception();
