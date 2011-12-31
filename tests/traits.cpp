@@ -87,34 +87,34 @@ BOOST_AUTO_TEST_CASE(member_pointer_test_case)
     };
 
     typedef function_traits<decltype(&S::p)> FTp;
-    BOOST_CHECK_TYPE_EQUAL(FTp::owner_type, S);
+    BOOST_CHECK_TYPE_EQUAL(FTp::owner_type, S&);
     BOOST_CHECK_TYPE_EQUAL(FTp::result_type, short);
     BOOST_CHECK_EQUAL(FTp::arity, 1);
     BOOST_CHECK_TYPE_EQUAL(FTp::arg<0>::type, const char*);
 
     typedef function_traits<decltype(&S::q)> FTq;
-    BOOST_CHECK_TYPE_EQUAL(FTp::owner_type, S);
+    BOOST_CHECK_TYPE_EQUAL(FTq::owner_type, const volatile S&);
     BOOST_CHECK_TYPE_EQUAL(FTq::result_type, unsigned int);
     BOOST_CHECK_EQUAL(FTq::arity, 2);
     BOOST_CHECK_TYPE_EQUAL(FTq::arg<0>::type, std::pair<int, int>);
     BOOST_CHECK_TYPE_EQUAL(FTq::arg<1>::type, int);
 
     typedef function_traits<decltype(&S::operator==)> FTe;
-    BOOST_CHECK_TYPE_EQUAL(FTp::owner_type, S);
+    BOOST_CHECK_TYPE_EQUAL(FTe::owner_type, const S&);
     BOOST_CHECK_TYPE_EQUAL(FTe::result_type, bool);
     BOOST_CHECK_EQUAL(FTe::arity, 1);
     BOOST_CHECK_TYPE_EQUAL(FTe::arg<0>::type, const S&);
 
     typedef function_traits<decltype(&S::r)> FTr;
-    BOOST_CHECK_TYPE_EQUAL(FTp::owner_type, S);
+    BOOST_CHECK_TYPE_EQUAL(FTr::owner_type, volatile S&);
     BOOST_CHECK_TYPE_EQUAL(FTr::result_type, void);
     BOOST_CHECK_EQUAL(FTr::arity, 0);
 
     const auto& sr = &S::r;
     typedef function_traits<decltype(sr)> FTr2;
-    BOOST_CHECK_TYPE_EQUAL(FTp::owner_type, S);
-    BOOST_CHECK_TYPE_EQUAL(FTr::result_type, void);
-    BOOST_CHECK_EQUAL(FTr::arity, 0);
+    BOOST_CHECK_TYPE_EQUAL(FTr2::owner_type, volatile S&);
+    BOOST_CHECK_TYPE_EQUAL(FTr2::result_type, void);
+    BOOST_CHECK_EQUAL(FTr2::arity, 0);
 }
 
 BOOST_AUTO_TEST_CASE(function_object_test_case)

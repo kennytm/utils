@@ -84,6 +84,13 @@ struct function_traits<ReturnType(Args...)>
     typedef ReturnType result_type;
 
     /**
+    .. type:: type function_type
+
+        The function type (``R(T...)``).
+    */
+    typedef ReturnType function_type(Args...);
+
+    /**
     .. data:: static const size_t arity
 
         Number of arguments the function object will take.
@@ -107,42 +114,32 @@ struct function_traits<ReturnType(*)(Args...)>
     : public function_traits<ReturnType(Args...)>
 {};
 
-template <typename ReturnType, typename... Args>
-struct function_traits<ReturnType(&)(Args...)>
-    : public function_traits<ReturnType(Args...)>
-{};
-
-template <typename ReturnType, typename... Args>
-struct function_traits<ReturnType(&&)(Args...)>
-    : public function_traits<ReturnType(Args...)>
-{};
-
 template <typename ClassType, typename ReturnType, typename... Args>
 struct function_traits<ReturnType(ClassType::*)(Args...)>
     : public function_traits<ReturnType(Args...)>
 {
-    typedef ClassType owner_type;
+    typedef ClassType& owner_type;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
 struct function_traits<ReturnType(ClassType::*)(Args...) const>
     : public function_traits<ReturnType(Args...)>
 {
-    typedef /*const*/ ClassType owner_type;
+    typedef const ClassType& owner_type;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
 struct function_traits<ReturnType(ClassType::*)(Args...) volatile>
     : public function_traits<ReturnType(Args...)>
 {
-    typedef /*volatile*/ ClassType owner_type;
+    typedef volatile ClassType& owner_type;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
 struct function_traits<ReturnType(ClassType::*)(Args...) const volatile>
     : public function_traits<ReturnType(Args...)>
 {
-    typedef /*const volatile*/ ClassType owner_type;
+    typedef const volatile ClassType& owner_type;
 };
 
 template <typename FunctionType>
@@ -181,6 +178,24 @@ struct function_traits<MEM_FN_SYMBOL_XX0SL7G4Z0J<R(C::*)(A...) const volatile>>
 
 #undef MEM_FN_SYMBOL_XX0SL7G4Z0J
 #endif
+
+template <typename T>
+struct function_traits<T&> : public function_traits<T> {};
+template <typename T>
+struct function_traits<const T&> : public function_traits<T> {};
+template <typename T>
+struct function_traits<volatile T&> : public function_traits<T> {};
+template <typename T>
+struct function_traits<const volatile T&> : public function_traits<T> {};
+template <typename T>
+struct function_traits<T&&> : public function_traits<T> {};
+template <typename T>
+struct function_traits<const T&&> : public function_traits<T> {};
+template <typename T>
+struct function_traits<volatile T&&> : public function_traits<T> {};
+template <typename T>
+struct function_traits<const volatile T&&> : public function_traits<T> {};
+
 
 #define FORWARD_RES_8QR485JMSBT \
     typename std::conditional< \
