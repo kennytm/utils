@@ -16,12 +16,14 @@ This module provides the :type:`utils::variant` type, which stores tagged union
 of objects (also known as discriminated union or sum type).
 
 This is mainly a rewrite of `boost::variant
-<http://www.boost.org/doc/libs/1_47_0/doc/html/variant.html>`_ for C++11 support.
+<http://www.boost.org/doc/libs/1_48_0/doc/html/variant.html>`_ for C++11 support.
 
 :type:`utils::variant` support the following features over ``boost::variant``:
 
 * Proper move semantics
 * Stricter, compile-time type checking
+* Visitation using pattern-matching, in additional to the traditional
+  class-based method.
 
 but it also has some features not present in :type:`utils::variant`, and will
 likely not be supported here:
@@ -29,7 +31,7 @@ likely not be supported here:
 * Recursive variant
 * Reference members
 * `Boost.MPL <http://www.boost.org/doc/libs/1_47_0/libs/mpl/doc/index.html>`_
-* C++03, and support for compilers other than gcc ≥4.6 (and clang when its C++11
+* C++03, and support for compilers other than gcc ≥4.7 (and clang when its C++11
   support becomes better).
 
 Synopsis
@@ -41,28 +43,23 @@ Synopsis
     #include <vector>
     #include <utils/variant.hpp>
 
-    class print_content_visitor : public utils::static_visitor<void>
-    {
-    public:
-        void operator()(const std::vector<int>& vec) const
-        {
-            for (int val : vec)
-                printf("%d\n", val);
-        }
-
-        void operator()(const std::string& str) const
-        {
-            printf("[%s]\n", str.c_str());
-        }
-    };
-
     int main()
     {
         std::vector<int> v {8, 9, 10, 12, 18, 24, 36, 48, 64, 72, 96};
 
         utils::variant<std::vector<int>, std::string> u = std::move(v);
 
-        utils::apply_visitor(print_content_visitor(), u);
+        utills::case_of(u,
+            [](const std::vector<int>& vec)
+            {
+                for (int val : vec)
+                    printf("%d\n", val);
+            },
+            [](const std::string& str)
+            {
+                printf("[%s]\n", str.c_str());
+            }
+        );
 
         return 0;
     }
@@ -78,6 +75,7 @@ Synopsis
 #if !defined(BOOST_NO_TYPEID)
 #include <typeinfo>
 #endif
+#include "traits.hpp"
 
 namespace utils {
 
@@ -513,6 +511,9 @@ Members
         template <typename U, typename... TX>
         friend const U* get(const variant<TX...>* v) noexcept;
 
+        template <typename V, typename... F>
+        friend typename xx_impl::common_result_type<F...>::type case_of(V&& variant, F&&... functions);
+
         template <typename...>
         friend class variant;
     };
@@ -569,6 +570,20 @@ Members
     xx_impl::delayed_visitor<SV> apply_visitor(SV& visitor)
     {
         return xx_impl::delayed_visitor<SV>(visitor);
+    }
+
+    /**
+    .. function:: auto utils::case_of<T..., F...>(const utils::variant<T...>& var, F&&... functions)
+                  auto utils::case_of<T..., F...>(utils::variant<T...>& var, F&&... functions)
+
+        Apply one of the functions which has compatible argument type to the
+        variant, and return that result.
+    */
+    template <typename V, typename... F>
+    typename xx_impl::common_result_type<F...>::type case_of(V&& variant, F&&... functions)
+    {
+        return xx_impl::apply_funcs_run(variant._storage, variant._index,
+                                        std::forward<F>(functions)...);
     }
 
     /**

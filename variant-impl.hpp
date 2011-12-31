@@ -27,6 +27,12 @@ static inline constexpr size_t max2(size_t a, size_t b) noexcept
     return a > b ? a : b;
 }
 
+template <typename... F>
+struct common_result_type
+{
+    typedef typename std::common_type<typename function_traits<F>::result_type...>::type type;
+};
+
 //}}}
 
 //{{{ Variadic unrestricted union (collapsed tuple)
@@ -191,6 +197,11 @@ struct is_same
     enum { value = std::is_same<T, U>::value };
 };
 
+template <typename To, typename From, typename = bool>
+struct is_convertible
+{
+    enum { value = std::is_convertible<From, To>::value };
+};
 
 template <typename T, typename U, typename = bool>
 struct is_nothrow_assignable_helper
@@ -632,6 +643,68 @@ public:
 private:
     SV& _visitor;
 };
+
+//{{{ Functional-style apply
+
+template <size_t index>
+struct apply_funcs_walker
+{
+    template <typename T, typename Head, typename... Rest>
+    auto operator()(T&& value, Head&& head_func, Rest&&... rest_funcs)
+        -> decltype(apply_funcs_walker<index-1>()(std::forward<T>(value), std::forward<Rest>(rest_funcs)...))
+    {
+        return apply_funcs_walker<index-1>()(std::forward<T>(value), std::forward<Rest>(rest_funcs)...);
+    }
+};
+
+template <>
+struct apply_funcs_walker<0>
+{
+    template <typename T, typename Head, typename... Rest>
+    auto operator()(T&& value, Head&& head_func, Rest&&...)
+        -> decltype(head_func(std::forward<T>(value)))
+    {
+        return head_func(std::forward<T>(value));
+    }
+};
+
+template <typename T, typename... F>
+typename common_result_type<F...>::type
+    apply_funcs_check(T&& value, F&&... functions)
+{
+    typedef get_index<T, is_convertible,
+                      typename function_traits<F>::template arg<0>::type...> index_tmpl;
+
+    static_assert(index_tmpl::found, "Some variants are not handled.");
+    static_assert(!index_tmpl::ambiguous, "Applying variant to ambiguous list of functions.");
+    static constexpr size_t index_of_F = index_tmpl::index;
+
+    return apply_funcs_walker<index_of_F>()(std::forward<T>(value), std::forward<F>(functions)...);
+}
+
+template <typename T, typename... F>
+typename std::enable_if<!is_empty<T>::value, typename common_result_type<F...>::type>::type
+    apply_funcs_run(T&& un, size_t index, F&&... functions)
+{
+    if (index != 0)
+    {
+        return apply_funcs_run(forward_like<T>(un.rest), index-1,
+                               std::forward<F>(functions)...);
+    }
+    else
+    {
+        return apply_funcs_check(forward_like<T>(un.head),
+                                 std::forward<F>(functions)...);
+    }
+}
+
+template <typename T, typename... F>
+typename std::enable_if<is_empty<T>::value, typename common_result_type<F...>::type>::type
+    apply_funcs_run(T&&, size_t, F&&...) { assert(false); }
+
+
+
+//}}}
 
 }}
 
