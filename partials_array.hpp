@@ -135,7 +135,7 @@ public:
     void update(RandomAccessIterator begin, RandomAccessIterator end)
     {
         size_t partials_size = _partials.size();
-        size_t collection_size = end - begin;
+        auto collection_size = static_cast<size_t>(end - begin);
         if (collection_size <= partials_size)
             return;
 

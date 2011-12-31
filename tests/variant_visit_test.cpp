@@ -56,7 +56,7 @@ public:
 };
 
 template <typename Checker, typename Variant>
-inline void unary_test(Variant& var, Checker* = 0)
+static void unary_test(Variant& var, Checker* = 0)
 {
     Checker checker;
     const Checker& const_checker = checker;
@@ -74,7 +74,7 @@ inline void unary_test(Variant& var, Checker* = 0)
 }
 
 template <typename Checker, typename Variant1, typename Variant2>
-inline void binary_test(Variant1& var1, Variant2& var2, Checker* = 0)
+static void binary_test(Variant1& var1, Variant2& var2, Checker* = 0)
 {
     Checker checker;
     const Checker& const_checker = checker;

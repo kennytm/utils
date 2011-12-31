@@ -65,7 +65,7 @@ struct total_sizeof : utils::static_visitor<int>
    template<class Value>
    int operator()(const Value&) const
    {
-      total_ += sizeof(Value);
+      total_ += static_cast<int>(sizeof(Value));
       return total_;
    }
 
@@ -106,7 +106,7 @@ struct sum_int : utils::static_visitor<int>
    template<typename T>
    void add(T& , int_to_type<false> ) const
    {
-      total_ += sizeof(T);
+      total_ += static_cast<int>(sizeof(T));
    }
 
    template<typename T>
@@ -199,6 +199,8 @@ struct int_printer : utils::static_visitor<std::string>
       return ost_.str();
    }
 
+   ~int_printer(){}
+
 private:
    std::string prefix_s_;
    mutable std::ostringstream ost_;
@@ -242,7 +244,7 @@ static inline const char* get_type_name(const std::type_info& ti)
 }
 
 template<typename VariantType, typename S>
-inline void verify_impl(int line, VariantType& var, spec<S>, std::string str = "")
+static void verify_impl(int line, VariantType& var, spec<S>, std::string str = "")
 {
    const VariantType& cvar = var;
 

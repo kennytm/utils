@@ -271,7 +271,7 @@ Members
 
     public:
         template <typename U>
-        variant<T...>& operator=(U&& other)
+        variant<T...>& operator=(U&& other) noexcept(xx_impl::is_generic_nothrow_assignable<U>())
         {
             typedef xx_impl::get_index<U, xx_impl::is_assignable, T...> index_tmpl;
             static_assert(index_tmpl::found, "Assigning to variant from unexpected type.");
@@ -285,14 +285,9 @@ Members
             }
             else
             {
-                static const bool is_nothrow_copyable = std::is_lvalue_reference<U>::value
-                                                     && xx_impl::is_nothrow_copy_constructible<U>();
-                static const bool is_nothrow_movable = std::is_rvalue_reference<U>::value
-                                                    && xx_impl::is_nothrow_move_constructible<U>();
-
                 xx_impl::init_visitor_1<U> ctor (std::forward<U>(other));
                 xx_impl::static_applier<index_of_U> static_applier;
-                this->perform_safe_copy(is_nothrow_copyable || is_nothrow_movable,
+                this->perform_safe_copy(xx_impl::is_generic_nothrow_assignable<U>(),
                     [&, this] { static_applier(_storage, ctor); }
                 );
                 _index = index_of_U;

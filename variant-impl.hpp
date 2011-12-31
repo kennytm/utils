@@ -222,6 +222,16 @@ static constexpr bool is_nothrow_copy_constructible() noexcept
                                          const T&>::value;
 }
 
+template <typename U>
+static constexpr bool is_generic_nothrow_assignable() noexcept
+{
+    return
+        (std::is_lvalue_reference<U>::value &&
+            xx_impl::is_nothrow_copy_constructible<U>()) ||
+        (std::is_rvalue_reference<U>::value &&
+            xx_impl::is_nothrow_move_constructible<U>());
+}
+
 //}}}
 
 //{{{ Get index of type matching condition
@@ -255,6 +265,8 @@ struct get_index_of_variant;
 template <typename, template <typename, typename, typename=bool> class, typename...>
 struct get_index;
 
+// Given the type 'From', find the index of (T, Rest...) which are the same
+// under the binary predicate 'Checker'.
 template <typename From, template <typename, typename, typename=bool> class Checker, typename T, typename... Rest>
 struct get_index<From, Checker, T, Rest...>
 {

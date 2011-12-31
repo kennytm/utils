@@ -1,3 +1,6 @@
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+
 //-----------------------------------------------------------------------------
 // boost-libs variant/test/test1.cpp header file
 // See http://www.boost.org for updates, documentation, and revision history.

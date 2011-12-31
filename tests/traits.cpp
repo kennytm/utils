@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(mem_fn_test_case)
     struct K
     {
         int p;
-        double q(float r) const { return p + r; }
+        double q(float r) const { return 0.0; }
     };
 
     auto pp = std::mem_fn(&K::p);

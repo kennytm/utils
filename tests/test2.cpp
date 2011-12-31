@@ -1,3 +1,5 @@
+#pragma GCC diagnostic ignored "-Wconversion"
+
 //-----------------------------------------------------------------------------
 // boost-libs variant/test/test2.cpp header file
 // See http://www.boost.org for updates, documentation, and revision history.
@@ -65,7 +67,7 @@ struct short_string
       return *this;
    }
 
-   operator const char*() const
+   operator const char*() const noexcept
    {
       return buffer_;
    }
