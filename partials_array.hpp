@@ -141,16 +141,16 @@ public:
 
         _partials.reserve(collection_size);
 
-        auto cur = begin + partials_size;
+        std::advance(begin, partials_size);
         if (partials_size == 0)
         {
-            _partials.push_back(_computer(*cur));
-            ++ cur;
+            _partials.push_back(_computer(*begin));
+            ++ begin;
         }
 
-        for (; cur != end; ++ cur)
+        for (; begin != end; ++ begin)
         {
-            _partials.push_back(_partials.back() + _computer(*cur));
+            _partials.push_back(_partials.back() + _computer(*begin));
         }
     }
 

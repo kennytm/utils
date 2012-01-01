@@ -330,7 +330,7 @@ class property_store_empty
 
         Creates a read-write property passed by value.
 
-    .. type:: struct read_write_byval<T, T (Owner::* getter)() const, void (Owner::* setter)(const T&)>
+    .. type:: struct read_write_byref<T, T (Owner::* getter)() const, void (Owner::* setter)(const T&)>
 
         Creates a read-write property passed by const reference.
 
