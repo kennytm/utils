@@ -146,8 +146,14 @@ namespace xx_impl
 
             T operator->() const
             {
-                static_assert(std::is_pointer<T>::value, "Cannot call -> on non-pointers");
-                return static_cast<T>(*this);
+                T retval = *this;
+                return retval;
+            }
+
+            T get() const
+            {
+                T retval = *this;
+                return retval;
             }
 
             /* Note to user: If you see an 'error: ... is protected' here, it

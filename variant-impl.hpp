@@ -475,16 +475,10 @@ public:
 class assign_visitor_2 : public static_visitor<void>
 {
 public:
-    template <typename T, typename U, typename = typename std::enable_if<is_assignable<T, U>::value>::type>
+    template <typename T, typename U>
     void operator()(T& dest, U&& src) const noexcept(is_nothrow_assignable<T, U>())
     {
         dest = std::forward<U>(src);
-    }
-
-    template <typename T, typename U, typename = typename std::enable_if<!is_assignable<T, U>::value>::type>
-    void operator()(T&&, U&&) const
-    {
-        assert(false);
     }
 };
 
