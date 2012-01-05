@@ -640,21 +640,23 @@ private:
 
 //{{{ Functional-style apply
 
-template <size_t index>
-struct apply_funcs_walker
+template <size_t index, typename T, typename... Rest>
+struct apply_funcs_walker;
+
+template <size_t index, typename T, typename Head, typename... Rest>
+struct apply_funcs_walker<index, T, Head, Rest...>
 {
-    template <typename T, typename Head, typename... Rest>
     auto operator()(T&& value, Head&& head_func, Rest&&... rest_funcs)
-        -> decltype(apply_funcs_walker<index-1>()(std::forward<T>(value), std::forward<Rest>(rest_funcs)...))
+        -> typename function_traits<apply_funcs_walker<index-1, T, Rest...>>::result_type
     {
-        return apply_funcs_walker<index-1>()(std::forward<T>(value), std::forward<Rest>(rest_funcs)...);
+        apply_funcs_walker<index-1, T, Rest...> functor;
+        return functor(std::forward<T>(value), std::forward<Rest>(rest_funcs)...);
     }
 };
 
-template <>
-struct apply_funcs_walker<0>
+template <typename T, typename Head, typename... Rest>
+struct apply_funcs_walker<0, T, Head, Rest...>
 {
-    template <typename T, typename Head, typename... Rest>
     auto operator()(T&& value, Head&& head_func, Rest&&...)
         -> decltype(head_func(std::forward<T>(value)))
     {
@@ -673,7 +675,7 @@ typename common_result_type<F...>::type
     static_assert(!index_tmpl::ambiguous, "Applying variant to ambiguous list of functions.");
     static constexpr size_t index_of_F = index_tmpl::index;
 
-    return apply_funcs_walker<index_of_F>()(std::forward<T>(value), std::forward<F>(functions)...);
+    return apply_funcs_walker<index_of_F, T, F...>()(std::forward<T>(value), std::forward<F>(functions)...);
 }
 
 template <typename T, typename... F>

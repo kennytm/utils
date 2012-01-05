@@ -363,6 +363,7 @@ class generic_unique_ptr : public BASE_GTI9R9EEWSN(unique)
 public:
     constexpr generic_unique_ptr() noexcept : BASE_GTI9R9EEWSN(unique)() {}
     constexpr generic_unique_ptr(std::nullptr_t) noexcept : BASE_GTI9R9EEWSN(unique)() {}
+    inline ~generic_unique_ptr() {}
 
     template <typename U>
     explicit generic_unique_ptr(U* ptr) noexcept : BASE_GTI9R9EEWSN(unique)(ptr) {}
