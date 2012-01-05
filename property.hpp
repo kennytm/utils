@@ -95,7 +95,7 @@ namespace xx_impl
         template <typename T_IRAPKRK260L> \
         ThisType& operator op##=(T_IRAPKRK260L&& t) \
         { \
-            *this = *this op std::forward<T_IRAPKRK260L>(t); \
+            this->set(this->get() op std::forward<T_IRAPKRK260L>(t)); \
             return *this; \
         }
 
@@ -109,7 +109,9 @@ namespace xx_impl
         DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, |) \
         DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, ^) \
         DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, >>) \
-        DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, <<)
+        DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, <<) \
+        ThisType& operator=(ThisType&& other) { this->set(other.get()); return *this; } \
+        ThisType& operator=(const ThisType& other) { this->set(other.get()); return *this; }
 
     // declare the protected structors to avoid the user accidentally using
     // 'auto xxxx = property' and receives garbage.
@@ -118,9 +120,12 @@ namespace xx_impl
             ThisType() = default; \
             ThisType(ThisType&&) = default; \
             ThisType(const ThisType&) = default; \
-            ThisType& operator=(ThisType&&) = default; \
-            ThisType& operator=(const ThisType&) = default; \
             friend Owner;
+
+    #define DECLARE_PROTECTED_ASSIGNMENT_OPS_PHUTZL90M9P(ThisType) \
+        protected: \
+            ThisType& operator=(const ThisType&) = default; \
+            ThisType& operator=(ThisType&&) = default;
 
     template <typename Owner, typename OwnerPtrConvertor>
     struct generic_property_store
@@ -128,32 +133,20 @@ namespace xx_impl
         template <typename T, T (Owner::*getter)() const>
         struct read_only
         {
-            operator T() const
-            {
-                return (OwnerPtrConvertor()(this)->*getter)();
-            }
+            T get() const { return (OwnerPtrConvertor()(this)->*getter)(); }
+
+            operator T() const { return get(); }
+            T operator->() const { return get(); }
 
             template <typename V>
             bool operator==(V&& other) const
             {
-                return static_cast<T>(*this) == std::forward<V>(other);
+                return get() == std::forward<V>(other);
             }
 
             friend std::ostream& operator<<(std::ostream& os, const read_only& pr)
             {
-                return os << static_cast<T>(pr);
-            }
-
-            T operator->() const
-            {
-                T retval = *this;
-                return retval;
-            }
-
-            T get() const
-            {
-                T retval = *this;
-                return retval;
+                return os << pr.get();
             }
 
             /* Note to user: If you see an 'error: ... is protected' here, it
@@ -161,18 +154,26 @@ namespace xx_impl
                work in C++. Please declare with explicit type.
              */
             DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(read_only)
+            DECLARE_PROTECTED_ASSIGNMENT_OPS_PHUTZL90M9P(read_only)
         };
 
         template <typename T, void (Owner::*setter)(T)>
         struct write_only
         {
+            template <typename U>
+            void set(U&& value)
+            {
+                (OwnerPtrConvertor()(this)->*setter)(std::forward<U>(value));
+            }
+
             write_only& operator=(T value)
             {
-                (OwnerPtrConvertor()(this)->*setter)(std::forward<T>(value));
+                set(std::forward<T>(value));
                 return *this;
             }
 
             DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(write_only)
+            DECLARE_PROTECTED_ASSIGNMENT_OPS_PHUTZL90M9P(write_only)
         };
 
         template <typename T, T (Owner::*getter)() const, void (Owner::*setter)(T)>
@@ -327,10 +328,18 @@ class property_store_empty
         Creates a read-only property of type *T*. When the property is accessed
         as an *T*, the *getter* will be invoked.
 
+        .. function:: T get() const
+
+            Access the getter directly.
+
     .. type:: struct write_only<T, void (Owner::* setter)(T)>
 
         Creates a write-only property of type *T*. When the property is assigned,
         the *setter* will be invoked.
+
+        .. function:: void set<U>(U&& value)
+
+            Access the setter directly.
 
     .. type:: struct read_write_byval<T, T (Owner::* getter)() const, void (Owner::* setter)(T)>
 
