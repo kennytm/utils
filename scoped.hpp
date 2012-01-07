@@ -32,6 +32,9 @@ Synopsis
 #ifndef SCOPED_HPP_I40D5JT8OZ9
 #define SCOPED_HPP_I40D5JT8OZ9 1
 
+#include <type_traits>
+#include <utility>
+
 namespace utils {
 
 namespace xx_impl

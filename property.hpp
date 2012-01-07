@@ -110,8 +110,6 @@ namespace xx_impl
         DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, ^) \
         DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, >>) \
         DECLARE_COMPOUND_OP_AP7B0QH2PC(ThisType, <<) \
-        ThisType& operator=(ThisType&& other) { this->set(other.get()); return *this; } \
-        ThisType& operator=(const ThisType& other) { this->set(other.get()); return *this; }
 
     // declare the protected structors to avoid the user accidentally using
     // 'auto xxxx = property' and receives garbage.
@@ -120,12 +118,9 @@ namespace xx_impl
             ThisType() = default; \
             ThisType(ThisType&&) = default; \
             ThisType(const ThisType&) = default; \
-            friend Owner;
-
-    #define DECLARE_PROTECTED_ASSIGNMENT_OPS_PHUTZL90M9P(ThisType) \
-        protected: \
             ThisType& operator=(const ThisType&) = default; \
-            ThisType& operator=(ThisType&&) = default;
+            ThisType& operator=(ThisType&&) = default; \
+            friend Owner;
 
     template <typename Owner, typename OwnerPtrConvertor>
     struct generic_property_store
@@ -154,7 +149,6 @@ namespace xx_impl
                work in C++. Please declare with explicit type.
              */
             DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(read_only)
-            DECLARE_PROTECTED_ASSIGNMENT_OPS_PHUTZL90M9P(read_only)
         };
 
         template <typename T, void (Owner::*setter)(T)>
@@ -173,7 +167,6 @@ namespace xx_impl
             }
 
             DECLARE_PROTECTED_STRUCTORS_GG8O624RPLU(write_only)
-            DECLARE_PROTECTED_ASSIGNMENT_OPS_PHUTZL90M9P(write_only)
         };
 
         template <typename T, T (Owner::*getter)() const, void (Owner::*setter)(T)>
@@ -261,6 +254,7 @@ namespace xx_impl
         template <typename T>
         typename copy_cv<T, Owner>::type* operator()(T* this_) const noexcept
         {
+            static_assert(sizeof(Owner) == sizeof(T), "The owner class is not empty");
             return reinterpret_cast<typename copy_cv<T, Owner>::type*>(this_);
         }
     };

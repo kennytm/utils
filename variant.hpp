@@ -49,6 +49,8 @@ Synopsis
 
         utils::variant<std::vector<int>, std::string> u = std::move(v);
 
+        assert(v.is_type< std::vector<int> >());
+
         utills::case_of(u,
             [](const std::vector<int>& vec)
             {
@@ -393,7 +395,7 @@ Members
             return *this;
         }
 
-        void swap(variant<T...>& other)
+        void swap(variant& other)
         {
             if (_index == other._index)
             {
@@ -402,7 +404,7 @@ Members
             }
             else
             {
-                variant<T...> tmp = std::move(other);
+                auto tmp = std::move(other);
                 other = std::move(*this);
                 *this = std::move(tmp);
             }
@@ -492,6 +494,19 @@ Members
             return xx_impl::apply(_storage, _index, tv);
         }
 #endif
+
+        /**
+        .. function:: bool is_type<U>() const noexcept
+
+            Check if the variant is currently containing the **exact type** *U*.
+        */
+        template <typename U>
+        bool is_type() const noexcept
+        {
+            typedef xx_impl::get_index<U, xx_impl::is_same, T...> index_impl;
+            static_assert(index_impl::is_exact, "Checking from unexpected type.");
+            return index_impl::index == _index;
+        }
 
         template <typename SV, typename V>
         friend typename SV::result_type apply_visitor(SV& visitor, V&& variant);

@@ -185,7 +185,6 @@ BOOST_AUTO_TEST_CASE(movable)
     k2 = std::move(k);
     BOOST_CHECK(k2._c.moved);
     BOOST_CHECK(!k2._c.copied);
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()
