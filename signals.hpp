@@ -85,7 +85,7 @@ Emitting a singal::
 #elif defined(UTILS_SIGNALS_BACKEND_SINGLE_THREADED)
 #include "signals-single_threaded.inc.hpp"
 #else
-#error Please define one of the following: UTILS_SIGNALS_BACKEND_LIBSIGC
+#error Please define one of the following: UTILS_SIGNALS_BACKEND_LIBSIGC, UTILS_SIGNALS_BACKEND_SINGLE_THREADED
 
 namespace utils {
 
