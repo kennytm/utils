@@ -101,7 +101,7 @@ void event_loop::add_check_watcher()
     if (ev_is_active(&w))
         return;
 
-    ev_check_init(&w, [](struct ev_loop* loop, ev_check* check, int)
+    ev_idle_init(&w, [](struct ev_loop* loop, ev_idle* w, int)
     {
         auto this_ = static_cast<event_loop*>(ev_userdata(loop));
         auto& imm_list = this_->_imm_list;
@@ -122,10 +122,10 @@ void event_loop::add_check_watcher()
 
         if (imm_list.empty())
         {
-            ev_check_stop(loop, check);
+            ev_idle_stop(loop, w);
         }
     });
-    ev_check_start(_loop, &w);
+    ev_idle_start(_loop, &w);
 }
 
 void event_loop::cancel(event_handle handle)
@@ -157,7 +157,7 @@ void event_loop::cancel(event_handle handle)
             if (_imm_list.empty())
             {
                 auto& w = _imm_watcher;
-                ev_check_stop(_loop, &w);
+                ev_idle_stop(_loop, &w);
             }
         }
     );

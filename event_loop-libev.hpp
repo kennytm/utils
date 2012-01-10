@@ -107,7 +107,7 @@ private:
     void add_check_watcher();
 
     struct ev_loop* _loop;
-    ev_check _imm_watcher;
+    ev_idle _imm_watcher;
 
     std::list<xx_impl::io_entry> _io_list;
     std::list<xx_impl::timer_entry> _timer_list;
