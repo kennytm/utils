@@ -264,22 +264,22 @@ namespace xx_impl
     template <typename T, typename SA, template<typename, typename> class P>
     bool operator==(const utils::xx_impl::generic_smart_ptr<T, SA, P>& a, std::nullptr_t) noexcept
     {
-        return !!a;
+        return !a;
     }
     template <typename T, typename SA, template<typename, typename> class P>
     bool operator==(std::nullptr_t, const utils::xx_impl::generic_smart_ptr<T, SA, P>& a) noexcept
     {
-        return !!a;
+        return !a;
     }
     template <typename T, typename SA, template<typename, typename> class P>
     bool operator!=(const utils::xx_impl::generic_smart_ptr<T, SA, P>& a, std::nullptr_t) noexcept
     {
-        return !a;
+        return !!a;
     }
     template <typename T, typename SA, template<typename, typename> class P>
     bool operator!=(std::nullptr_t, const utils::xx_impl::generic_smart_ptr<T, SA, P>& a) noexcept
     {
-        return !a;
+        return !!a;
     }
 }
 
@@ -296,7 +296,7 @@ namespace xx_impl
 
     ::
 
-        struct GLibDeleter
+        struct GLibDeallocator
         {
             static void release(gpointer obj) noexcept
             {
