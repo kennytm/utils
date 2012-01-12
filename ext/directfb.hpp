@@ -214,26 +214,54 @@ public:
     */
     DFBResult error_code;
 
-    explicit exception(DFBResult error_code_) : error_code(error_code_) {}
+    exception(DFBResult error_code, const char* filename = nullptr, int line = 0)
+        : error_code(error_code),
+          _filename(filename),
+          _line(line)
+    {}
 
     virtual const char* what() const noexcept
     {
-        return DirectFBErrorString(error_code);
+        if (!_filename)
+            return DirectFBErrorString(error_code);
+        else
+        {
+            std::string error_message (_filename);
+            error_message.push_back('(');
+            error_message += std::to_string(_line);
+            error_message += "): ";
+            error_message += DirectFBErrorString(error_code);
+            return error_message.c_str();
+        }
     }
+
+private:
+    const char* _filename;
+    int _line;
 };
 
 /**
-.. function:: static inline void utils::directfb::checked(DFBResult error_code)
+.. function:: static inline void utils::directfb::checked(DFBResult error_code, const char* filename = nullptr, int line = 0)
 
     A convenient function wrapped around DirectFB functions that may return an
     error code. If the *error_code* is not DFB_OK, a
     :type:`utils::directfb::exception` will be thrown.
 */
-static inline void checked(DFBResult error_code)
+static inline void checked(DFBResult error_code, const char* filename = nullptr, int line = 0)
 {
     if (error_code != DFB_OK)
-        throw exception(error_code);
+        throw exception(error_code, filename, line);
 }
+
+/**
+.. macro:: UTILS_DIRECTFB_CHECKED(...) = utils::directfb::checked((__VA_ARGS__), __FILE__, __LINE__)
+
+    A convenient macro wrapped around :func:`utils::directfb::checked` which
+    includes the current line file name and line number.
+*/
+#define UTILS_DIRECTFB_CHECKED(...) utils::directfb::checked((__VA_ARGS__), __FILE__, __LINE__)
+
+
 
 /**
 .. type:: class utils::directfb::lock final
