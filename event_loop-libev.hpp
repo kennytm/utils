@@ -49,6 +49,7 @@ public:
         : _loop(ev_loop_new(0))
     {
         ev_set_userdata(_loop, this);
+        init_imm_watcher();
     }
 
     event_handle listen(int fd, xx_impl::io_function functor);
@@ -105,6 +106,7 @@ private:
     std::list<xx_impl::imm_entry>::iterator imm_impl(event_action default_action,
                                                      xx_impl::timer_function&& functor);
     void add_check_watcher();
+    void init_imm_watcher();
 
     struct ev_loop* _loop;
     ev_idle _imm_watcher;

@@ -94,14 +94,10 @@ std::list<xx_impl::imm_entry>::iterator event_loop::imm_impl(event_action defaul
     return _imm_list.begin();
 }
 
-void event_loop::add_check_watcher()
+void event_loop::init_imm_watcher()
 {
-    auto& w = _imm_watcher;
-
-    if (ev_is_active(&w))
-        return;
-
-    ev_idle_init(&w, [](struct ev_loop* loop, ev_idle* w, int)
+    auto& watcher = _imm_watcher;
+    ev_idle_init(&watcher, [](struct ev_loop* loop, ev_idle* w, int)
     {
         auto this_ = static_cast<event_loop*>(ev_userdata(loop));
         auto& imm_list = this_->_imm_list;
@@ -125,6 +121,15 @@ void event_loop::add_check_watcher()
             ev_idle_stop(loop, w);
         }
     });
+}
+
+void event_loop::add_check_watcher()
+{
+    auto& w = _imm_watcher;
+
+    if (ev_is_active(&w))
+        return;
+
     ev_idle_start(_loop, &w);
 }
 
