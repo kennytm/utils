@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(imm_delay)
     int p, q, r;
     p = q = r = 0;
 
-    loop.delay([&](bool&, utils::event_loop& loop, utils::event_handle)
+    loop.delay([&]
     {
         ++ p;
         q = p;
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(cancel_before_start)
 {
     utils::event_loop loop;
 
-    auto handle = loop.repeat([](utils::event_loop&, utils::event_handle)
+    auto handle = loop.repeat([]
     {
         BOOST_FAIL("Event should have been cancelled.");
     });
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(timed_delay)
     auto start_time = std::chrono::steady_clock::now();
     auto end_time = start_time;
 
-    loop.delay(std::chrono::milliseconds(400), [&](bool&, utils::event_loop& loop, utils::event_handle)
+    loop.delay(std::chrono::milliseconds(400), [&]
     {
         end_time = std::chrono::steady_clock::now();
     });
@@ -261,10 +261,7 @@ BOOST_AUTO_TEST_CASE(catch_signal)
         loop.cancel(handle);
     });
 
-    loop.delay([](bool&, utils::event_loop&, utils::event_handle)
-    {
-        raise(SIGINT);
-    });
+    loop.delay([]{ raise(SIGINT); });
 
     loop.run();
 
@@ -278,7 +275,7 @@ BOOST_AUTO_TEST_CASE(unique_event_owner)
     std::vector<utils::unique_event> events;
     int i = 0;
 
-    auto handle = loop.repeat([&](utils::event_loop& loop, utils::event_handle handle)
+    auto handle = loop.repeat([&]
     {
         ++ i;
         events.pop_back();
