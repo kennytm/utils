@@ -22,7 +22,7 @@ resources.
 
 #include <cerrno>
 #include <cstring>
-#include <exception>
+#include <system_error>
 #include <unistd.h>
 #include <dirent.h>
 #include <dlfcn.h>
@@ -85,47 +85,18 @@ typedef utils::generic_unique_ptr<DIR, xx_impl::DirDeallocator> unique_dir_ptr;
 typedef utils::generic_unique_ptr<void, xx_impl::DLDeallocator> unique_dl_handle;
 
 /**
-.. type:: class utils::posix::exception : public std::exception
-
-    An exception coming from an unsuccessful ``errno(3)``.
-*/
-class exception : public std::exception
-{
-public:
-    /**
-    .. data:: int error_number
-
-        The corresponding errno.
-    */
-    int error_number;
-
-    /**
-    .. function:: exception(int error_number = errno)
-
-        Initialize the constructor. If the argument is not given, the current
-        errno will be substituted.
-    */
-    exception(int errno_ = errno) : error_number(errno_) {}
-
-    virtual const char* what() const noexcept
-    {
-        return strerror(this->error_number);
-    }
-};
-
-/**
 .. function:: inline T utils::posix::checked(T result)
 
     Check if a POSIX function is completed successfully. If the *result* is
-    negative (usually meaning an unsuccessful call), a
-    :type:`utils::posix::exception` with the current errno will be thrown.
-    Otherwise, the code will be returned unmodified.
+    negative (usually meaning an unsuccessful call), a ``std::system_error``
+    with the current errno in the generic category will be thrown. Otherwise,
+    the code will be returned unmodified.
 */
 template <typename T>
 inline T checked(T retcode)
 {
     if (retcode < 0)
-        throw utils::posix::exception();
+        throw std::system_error(errno, std::generic_category());
     return retcode;
 }
 
