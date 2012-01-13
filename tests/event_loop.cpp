@@ -1,5 +1,6 @@
 #include <chrono>
 #include <numeric>
+#include <csignal>
 #include <boost/test/unit_test.hpp>
 #include <utils/event_loop.hpp>
 
@@ -247,6 +248,27 @@ BOOST_AUTO_TEST_CASE(pipe_io)
 
     loop.run();
     BOOST_CHECK_EQUAL(counters_received, 1+2+3+4);
+}
+
+BOOST_AUTO_TEST_CASE(catch_signal)
+{
+    utils::event_loop loop;
+    int raised_signal = 0;
+
+    loop.signal(SIGINT, [&](int sig, utils::event_loop& loop, utils::event_handle handle)
+    {
+        raised_signal = sig;
+        loop.cancel(handle);
+    });
+
+    loop.delay([](bool&, utils::event_loop&, utils::event_handle)
+    {
+        raise(SIGINT);
+    });
+
+    loop.run();
+
+    BOOST_CHECK_EQUAL(raised_signal, SIGINT);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

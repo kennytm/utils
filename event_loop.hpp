@@ -134,6 +134,11 @@ namespace utils
         Schedule a repeated timer in the event loop. The function will be called
         repeatedly with the given interval.
 
+    .. function:: utils::event_handle signal(int signum, const std::function<void(int signum, utils::event_loop&, utils::event_handle)>& callback)
+
+        Watch for the specified signal (if it can be trapped). Calls the
+        callback functor when the signal is raised.
+
     .. function:: void cancel(utils::event_handle handle)
 
         Cancel a previously scheduled event. The functor that is associated with

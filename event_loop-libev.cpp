@@ -17,7 +17,7 @@ typename List::iterator add_entry(List& entry_list, const Functor& callback)
 
 //{{{ libev callbacks registration:
 
-#define DEFINE_LIBEV_WATCHER_VTMWGQFDIO9(FuncProto, Kind, WatcherType, EVArg1, EVArg2) \
+#define DEFINE_LIBEV_WATCHER_VTMWGQFDIO9(FuncProto, Kind, WatcherType, ...) \
     event_handle event_loop::FuncProto \
     { \
         auto entry_it = add_entry(_##Kind##_entries, callback); \
@@ -28,7 +28,7 @@ typename List::iterator add_entry(List& entry_list, const Functor& callback)
         { \
             auto this_ = static_cast<event_loop*>(ev_userdata(loop)); \
             this_->call_##Kind(watcher); \
-        }, EVArg1, EVArg2); \
+        }, __VA_ARGS__); \
         WatcherType##_start(_loop, watcher); \
         \
         return watcher; \
@@ -46,6 +46,10 @@ DEFINE_LIBEV_WATCHER_VTMWGQFDIO9(
     repeat_impl(ev_tstamp rep, const xx_impl::repeat_func& callback),
     repeat, ev_timer, rep, rep
 )
+DEFINE_LIBEV_WATCHER_VTMWGQFDIO9(
+    signal(int signum, const xx_impl::signal_func& callback),
+    signal, ev_signal, signum
+)
 
 #undef DEFINE_LIBEV_WATCHER_VTMWGQFDIO9
 
@@ -60,6 +64,15 @@ void event_loop::call_io(ev_io* watcher)
         map_it->second->callback(watcher->fd, *this, watcher);
     else
         ev_io_stop(_loop, watcher);
+}
+
+void event_loop::call_signal(ev_signal* watcher)
+{
+    auto map_it = _signal_map.find(watcher);
+    if (map_it != _signal_map.end())
+        map_it->second->callback(watcher->signum, *this, watcher);
+    else
+        ev_signal_stop(_loop, watcher);
 }
 
 void event_loop::call_delay(ev_timer* watcher)
@@ -173,6 +186,16 @@ void event_loop::cancel(event_handle handle)
                 ev_io_stop(_loop, watcher);
                 _io_entries.erase(map_iter->second);
                 _io_map.erase(map_iter);
+            }
+        },
+        [this](ev_signal* watcher)
+        {
+            auto map_iter = _signal_map.find(watcher);
+            if (map_iter != _signal_map.end())
+            {
+                ev_signal_stop(_loop, watcher);
+                _signal_entries.erase(map_iter->second);
+                _signal_map.erase(map_iter);
             }
         },
         [this](ev_timer* watcher)
