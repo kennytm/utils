@@ -197,6 +197,8 @@ public:
                 slot.function(args...);
         }
     }
+
+    ~signal() {}
 };
 
 }
