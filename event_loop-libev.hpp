@@ -13,34 +13,53 @@ namespace utils {
 
 namespace xx_impl
 {
-    typedef std::function<void(event_action&)> timer_function;
-    typedef std::function<void(int, event_action&)> io_function;
+    struct io_entry;
+    struct delay_entry;
+    struct delay_imm_entry;
+    struct repeat_entry;
+    struct repeat_imm_entry;
+}
 
-    struct imm_entry
-    {
-        timer_function functor;
-        event_action default_action;
+typedef utils::variant<ev_io*,
+                       ev_timer*,
+                       std::list<xx_impl::delay_imm_entry>::iterator,
+                       std::list<xx_impl::repeat_imm_entry>::iterator> event_handle;
 
-        imm_entry(timer_function&& functor, event_action default_action);
-    };
-    struct timer_entry : imm_entry
-    {
-        ev_timer timer;
+namespace xx_impl
+{
+    typedef std::function<void(int fd, event_loop&, event_handle)> io_func;
+    typedef std::function<void(bool& keep, event_loop&, event_handle)> delay_func;
+    typedef std::function<void(event_loop&, event_handle)> repeat_func;
 
-        timer_entry(timer_function&& functor, event_action default_action)
-            : imm_entry(std::move(functor), default_action)
-        {}
-    };
     struct io_entry
     {
-        io_function functor;
-        ev_io io;
+        ev_io watcher;
+        io_func callback;
+    };
 
-        io_entry(io_function&& functor);
+    struct delay_entry
+    {
+        ev_timer watcher;
+        delay_func callback;
+    };
+
+    struct delay_imm_entry
+    {
+        delay_func callback;
+    };
+
+    struct repeat_entry
+    {
+        ev_timer watcher;
+        repeat_func callback;
+    };
+
+    struct repeat_imm_entry
+    {
+        repeat_func callback;
     };
 }
 
-typedef utils::variant<ev_io*, ev_timer*, std::list<xx_impl::imm_entry>::iterator> event_handle;
 
 class event_loop final
 {
@@ -52,32 +71,32 @@ public:
         init_imm_watcher();
     }
 
-    event_handle listen(int fd, xx_impl::io_function functor);
+    event_handle listen(int fd, const xx_impl::io_func& callback);
 
     template <typename R, typename P>
-    event_handle delay(std::chrono::duration<R, P> after, xx_impl::timer_function functor)
+    event_handle delay(std::chrono::duration<R, P> after, const xx_impl::delay_func& callback)
     {
         using namespace std::chrono;
         auto seconds = duration_cast<duration<ev_tstamp>>(after).count();
-        return timer_impl(seconds, event_action::cancel, std::move(functor));
+        return delay_impl(seconds, callback);
     }
 
     template <typename R, typename P>
-    event_handle repeat(std::chrono::duration<R, P> interval, xx_impl::timer_function functor)
+    event_handle repeat(std::chrono::duration<R, P> interval, const xx_impl::repeat_func& callback)
     {
         using namespace std::chrono;
         auto seconds = duration_cast<duration<ev_tstamp>>(interval).count();
-        return timer_impl(seconds, event_action::keep, std::move(functor));
+        return repeat_impl(seconds, callback);
     }
 
-    event_handle delay(xx_impl::timer_function functor)
+    event_handle delay(const xx_impl::delay_func& callback)
     {
-        return imm_impl(event_action::cancel, std::move(functor));
+        return delay_imm_impl(callback);
     }
 
-    event_handle repeat(xx_impl::timer_function functor)
+    event_handle repeat(const xx_impl::repeat_func& callback)
     {
-        return imm_impl(event_action::keep, std::move(functor));
+        return repeat_imm_impl(callback);
     }
 
     void cancel(event_handle handle);
@@ -100,22 +119,31 @@ public:
     }
 
 private:
-    ev_timer* timer_impl(ev_tstamp repeat,
-                         event_action default_action,
-                         xx_impl::timer_function&& functor);
-    std::list<xx_impl::imm_entry>::iterator imm_impl(event_action default_action,
-                                                     xx_impl::timer_function&& functor);
-    void add_check_watcher();
+    event_handle delay_impl(ev_tstamp after, const xx_impl::delay_func& callback);
+    event_handle repeat_impl(ev_tstamp rep, const xx_impl::repeat_func& callback);
+    event_handle delay_imm_impl(const xx_impl::delay_func& callback);
+    event_handle repeat_imm_impl(const xx_impl::repeat_func& callback);
+
+    void call_io(ev_io* watcher);
+    void call_delay(ev_timer* watcher);
+    void call_repeat(ev_timer* watcher);
+    void call_imms();
+
+    void start_imm_watcher();
+    void try_stop_imm_watcher();
     void init_imm_watcher();
 
     struct ev_loop* _loop;
     ev_idle _imm_watcher;
 
-    std::list<xx_impl::io_entry> _io_list;
-    std::list<xx_impl::timer_entry> _timer_list;
-    std::list<xx_impl::imm_entry> _imm_list;
+    std::list<xx_impl::io_entry> _io_entries;
+    std::list<xx_impl::delay_entry> _delay_entries;
+    std::list<xx_impl::delay_imm_entry> _delay_imm_entries;
+    std::list<xx_impl::repeat_entry> _repeat_entries;
+    std::list<xx_impl::repeat_imm_entry> _repeat_imm_entries;
     std::unordered_map<ev_io*, std::list<xx_impl::io_entry>::iterator> _io_map;
-    std::unordered_map<ev_timer*, std::list<xx_impl::timer_entry>::iterator> _timer_map;
+    std::unordered_map<ev_timer*, std::list<xx_impl::delay_entry>::iterator> _delay_map;
+    std::unordered_map<ev_timer*, std::list<xx_impl::repeat_entry>::iterator> _repeat_map;
 };
 
 }

@@ -61,13 +61,6 @@ Members
 namespace utils
 {
     class event_loop;
-
-    enum class event_action
-    {
-        keep,
-        cancel
-    };
-
     event_loop& get_main_loop();
 }
 
@@ -85,19 +78,6 @@ namespace utils
     cheaply copyable.
 
     The handle is not usable across threads.
-
-.. type:: enum class event_action
-
-    What to do when the event is handled.
-
-    .. member:: keep
-
-        Keep the event running. This is the default for file read events and
-        repeated events.
-
-    .. member:: cancel
-
-        Cancel the event. This is the default for delayed events.
 
 .. type:: class utils::event_loop final
     :noncopyable:
@@ -125,23 +105,31 @@ namespace utils
 
         Construct an event loop.
 
-    .. function:: utils::event_handle listen(int fd, const std::function<void(int fd, event_action&)>& functor)
+    .. function:: utils::event_handle listen(int fd, const std::function<void(int fd, utils::event_loop&, utils::event_handle)>& callback)
 
         Listen to the UNIX file descriptor *fd*. Calls the functor when *fd* has
         data to read.
 
-        .. note:: You can only stop a listener via event_action, but not revive it.
-
-    .. function:: utils::event_handle delay(std::chrono::duration<...> after, const std::function<void(event_action&)>& functor)
-                  utils::event_handle delay(const std::function<void(event_action&)>& functor)
+    .. function:: utils::event_handle delay(std::chrono::duration<...> after, const std::function<void(bool& keep, utils::event_loop&, utils::event_handle)>& callback)
+                  utils::event_handle delay(const std::function<void(bool& keep, utils::event_loop&, utils::event_handle)>& callback)
 
         Schedule a timer in the event loop. After a certain time interval, the
-        *function* will be called and the event will be removed. If *after* is
+        *callback* will be called and the event will be removed. If *after* is
         not supplied, the functor will be called as soon as possible (but after
         this function has completed).
 
-    .. function:: utils::event_handle repeat<F>(std::chrono::duration<...> interval, const std::function<void(event_action&)>& functor)
-                  utils::event_handle repeat<F>(const std::function<void(event_action&)>& functor)
+        .. warning::
+
+            Do not call :func:`~utils::event_loop::cancel` on the handle! It
+            will cause undefined behavior because the handle by default will be
+            cancelled automatically, and cancelling twice will cause
+            double-deletion.
+
+        In the callback, the *keep* parameter can be set to ``true`` to
+        reschedule the time-out event one more time.
+
+    .. function:: utils::event_handle repeat(std::chrono::duration<...> interval, const std::function<void(utils::event_loop&, utils::event_handle)>& callback)
+                  utils::event_handle repeat(const std::function<void(utils::event_loop&, utils::event_handle)>& callback)
 
         Schedule a repeated timer in the event loop. The function will be called
         repeatedly with the given interval.
@@ -149,12 +137,13 @@ namespace utils
     .. function:: void cancel(utils::event_handle handle)
 
         Cancel a previously scheduled event. The functor that is associated with
-        that event will not be called.
+        that event will not be called afterward.
 
     .. function:: void run()
 
         Start running the event loop. The function returns only after
-        :func:`~utils::event_loop::stop` is called.
+        :func:`~utils::event_loop::stop` is called or when all event handlers
+        have been cancelled.
 
     .. function:: void stop()
 

@@ -6,92 +6,103 @@
 
 namespace utils {
 
-xx_impl::io_entry::io_entry(xx_impl::io_function&& functor)
-    : functor(std::move(functor))
-{}
-
-xx_impl::imm_entry::imm_entry(xx_impl::timer_function&& functor, event_action default_action)
-    : functor(std::move(functor)),
-      default_action(default_action)
-{}
-
-event_handle event_loop::listen(int fd, xx_impl::io_function functor)
+template <typename List, typename Functor>
+typename List::iterator add_entry(List& entry_list, const Functor& callback)
 {
-    _io_list.emplace_front(std::move(functor));
-
-    auto watcher = &(_io_list.front().io);
-    _io_map.emplace(watcher, _io_list.begin());
-
-    ev_io_init(watcher, [](struct ev_loop* loop, ev_io* w, int)
-    {
-        auto this_ = static_cast<event_loop*>(ev_userdata(loop));
-        auto map_iter = this_->_io_map.find(w);
-        if (map_iter == this_->_io_map.end())
-        {
-            ev_io_stop(loop, w);
-            return;
-        }
-
-        auto list_iter = map_iter->second;
-        bool is_inactive = !ev_is_active(w);
-        auto action = is_inactive ? event_action::cancel : event_action::keep;
-        list_iter->functor(w->fd, action);
-        if (action == event_action::cancel || is_inactive)
-        {
-            if (!is_inactive)
-                ev_io_stop(loop, w);
-            this_->_io_list.erase(list_iter);
-            this_->_io_map.erase(map_iter);
-        }
-
-    }, fd, EV_READ);
-    ev_io_start(_loop, watcher);
-
-    return watcher;
+    typename List::value_type new_entry;
+    new_entry.callback = callback;
+    entry_list.push_front(std::move(new_entry));
+    return entry_list.begin();
 }
 
-ev_timer* event_loop::timer_impl(ev_tstamp repeat,
-                                 event_action default_action,
-                                 xx_impl::timer_function&& functor)
+//{{{ libev callbacks registration:
+
+#define DEFINE_LIBEV_WATCHER_VTMWGQFDIO9(FuncProto, Kind, WatcherType, EVArg1, EVArg2) \
+    event_handle event_loop::FuncProto \
+    { \
+        auto entry_it = add_entry(_##Kind##_entries, callback); \
+        auto watcher = &(entry_it->watcher); \
+        _##Kind##_map.emplace(watcher, std::move(entry_it)); \
+        \
+        WatcherType##_init(watcher, [](struct ev_loop* loop, WatcherType* watcher, int) \
+        { \
+            auto this_ = static_cast<event_loop*>(ev_userdata(loop)); \
+            this_->call_##Kind(watcher); \
+        }, EVArg1, EVArg2); \
+        WatcherType##_start(_loop, watcher); \
+        \
+        return watcher; \
+    }
+
+DEFINE_LIBEV_WATCHER_VTMWGQFDIO9(
+    listen(int fd, const xx_impl::io_func& callback),
+    io, ev_io, fd, EV_READ
+)
+DEFINE_LIBEV_WATCHER_VTMWGQFDIO9(
+    delay_impl(ev_tstamp after, const xx_impl::delay_func& callback),
+    delay, ev_timer, after, after
+)
+DEFINE_LIBEV_WATCHER_VTMWGQFDIO9(
+    repeat_impl(ev_tstamp rep, const xx_impl::repeat_func& callback),
+    repeat, ev_timer, rep, rep
+)
+
+#undef DEFINE_LIBEV_WATCHER_VTMWGQFDIO9
+
+//}}}
+
+//{{{ libev callbacks invocation:
+
+void event_loop::call_io(ev_io* watcher)
 {
-    _timer_list.emplace_front(std::move(functor), default_action);
-
-    auto watcher = &(_timer_list.front().timer);
-    _timer_map.emplace(watcher, _timer_list.begin());
-
-    ev_timer_init(watcher, [](struct ev_loop* loop, ev_timer* w, int)
-    {
-        auto this_ = static_cast<event_loop*>(ev_userdata(loop));
-        auto map_iter = this_->_timer_map.find(w);
-        if (map_iter == this_->_timer_map.end())
-        {
-            ev_timer_stop(loop, w);
-            return;
-        }
-
-        auto list_iter = map_iter->second;
-        auto action = list_iter->default_action;
-        list_iter->functor(action);
-        if (action == event_action::cancel)
-        {
-            ev_timer_stop(loop, w);
-            this_->_timer_list.erase(list_iter);
-            this_->_timer_map.erase(map_iter);
-        }
-
-    }, repeat, repeat);
-    ev_timer_start(_loop, watcher);
-
-    return watcher;
+    auto map_it = _io_map.find(watcher);
+    if (map_it != _io_map.end())
+        map_it->second->callback(watcher->fd, *this, watcher);
+    else
+        ev_io_stop(_loop, watcher);
 }
 
-std::list<xx_impl::imm_entry>::iterator event_loop::imm_impl(event_action default_action,
-                                                             xx_impl::timer_function&& functor)
+void event_loop::call_delay(ev_timer* watcher)
 {
-    add_check_watcher();
+    auto map_it = _delay_map.find(watcher);
+    if (map_it != _delay_map.end())
+    {
+        bool keep = false;
+        auto entry_it = map_it->second;
+        entry_it->callback(keep, *this, watcher);
 
-    _imm_list.emplace_front(std::move(functor), default_action);
-    return _imm_list.begin();
+        if (keep)
+            return;
+
+        _delay_map.erase(map_it);
+        _delay_entries.erase(entry_it);
+    }
+    ev_timer_stop(_loop, watcher);
+}
+
+void event_loop::call_repeat(ev_timer* watcher)
+{
+    auto map_it = _repeat_map.find(watcher);
+    if (map_it != _repeat_map.end())
+        map_it->second->callback(*this, watcher);
+    else
+        ev_timer_stop(_loop, watcher);
+}
+
+//}}}
+
+//{{{ Immediate callbacks:
+
+event_handle event_loop::delay_imm_impl(const xx_impl::delay_func& callback)
+{
+    start_imm_watcher();
+    return add_entry(_delay_imm_entries, callback);
+}
+
+event_handle event_loop::repeat_imm_impl(const xx_impl::repeat_func& callback)
+{
+    start_imm_watcher();
+    return add_entry(_repeat_imm_entries, callback);
 }
 
 void event_loop::init_imm_watcher()
@@ -100,37 +111,55 @@ void event_loop::init_imm_watcher()
     ev_idle_init(&watcher, [](struct ev_loop* loop, ev_idle* w, int)
     {
         auto this_ = static_cast<event_loop*>(ev_userdata(loop));
-        auto& imm_list = this_->_imm_list;
-
-        auto cur = imm_list.begin();
-        auto end = imm_list.end();
-        while (cur != end)
-        {
-            auto entry = cur;
-            ++ cur;
-
-            auto action = entry->default_action;
-            entry->functor(action);
-
-            if (action == event_action::cancel)
-                imm_list.erase(entry);
-        }
-
-        if (imm_list.empty())
-        {
-            ev_idle_stop(loop, w);
-        }
+        this_->call_imms();
     });
 }
 
-void event_loop::add_check_watcher()
+void event_loop::start_imm_watcher()
 {
-    auto& w = _imm_watcher;
-
-    if (ev_is_active(&w))
+    auto& watcher = _imm_watcher;
+    if (ev_is_active(&watcher))
         return;
+    ev_idle_start(_loop, &watcher);
+}
 
-    ev_idle_start(_loop, &w);
+void event_loop::call_imms()
+{
+    auto delay_cur = _delay_imm_entries.begin();
+    auto delay_end = _delay_imm_entries.end();
+    while (delay_cur != delay_end)
+    {
+        auto entry_it = delay_cur;
+        ++ delay_cur;
+
+        bool keep = false;
+        entry_it->callback(keep, *this, entry_it);
+        if (keep)
+            continue;
+
+        _delay_imm_entries.erase(entry_it);
+    }
+
+    auto repeat_cur = _repeat_imm_entries.begin();
+    auto repeat_end = _repeat_imm_entries.end();
+    while (repeat_cur != repeat_end)
+    {
+        auto entry_it = repeat_cur;
+        ++ repeat_cur;
+
+        entry_it->callback(*this, entry_it);
+    }
+
+    try_stop_imm_watcher();
+}
+
+void event_loop::try_stop_imm_watcher()
+{
+    if (_delay_imm_entries.empty() && _repeat_imm_entries.empty())
+    {
+        auto& watcher = _imm_watcher;
+        ev_idle_stop(_loop, &watcher);
+    }
 }
 
 void event_loop::cancel(event_handle handle)
@@ -142,28 +171,38 @@ void event_loop::cancel(event_handle handle)
             if (map_iter != _io_map.end())
             {
                 ev_io_stop(_loop, watcher);
-                _io_list.erase(map_iter->second);
+                _io_entries.erase(map_iter->second);
                 _io_map.erase(map_iter);
             }
         },
         [this](ev_timer* watcher)
         {
-            auto timer_map_iter = _timer_map.find(watcher);
-            if (timer_map_iter != _timer_map.end())
+            ev_timer_stop(_loop, watcher);
+
+            auto repeat_map_it = _repeat_map.find(watcher);
+            if (repeat_map_it != _repeat_map.end())
             {
-                ev_timer_stop(_loop, watcher);
-                _timer_list.erase(timer_map_iter->second);
-                _timer_map.erase(timer_map_iter);
+                _repeat_entries.erase(repeat_map_it->second);
+                _repeat_map.erase(repeat_map_it);
+                return;
+            }
+
+            auto delay_map_it = _delay_map.find(watcher);
+            if (delay_map_it != _delay_map.end())
+            {
+                _delay_entries.erase(delay_map_it->second);
+                _delay_map.erase(delay_map_it);
             }
         },
-        [this](std::list<xx_impl::imm_entry>::iterator imm_iter)
+        [this](std::list<xx_impl::delay_imm_entry>::iterator entry_it)
         {
-            _imm_list.erase(imm_iter);
-            if (_imm_list.empty())
-            {
-                auto& w = _imm_watcher;
-                ev_idle_stop(_loop, &w);
-            }
+            _delay_imm_entries.erase(entry_it);
+            try_stop_imm_watcher();
+        },
+        [this](std::list<xx_impl::repeat_imm_entry>::iterator entry_it)
+        {
+            _repeat_imm_entries.erase(entry_it);
+            try_stop_imm_watcher();
         }
     );
 }
