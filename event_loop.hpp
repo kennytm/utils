@@ -62,13 +62,6 @@ namespace utils
 {
     class event_loop;
     event_loop& get_main_loop();
-}
-
-
-#if defined(UTILS_EVENT_LOOP_BACKEND_LIBEV)
-#include "event_loop-libev.hpp"
-#else
-#error Please define one of the following: UTILS_EVENT_LOOP_BACKEND_LIBEV
 
 /**
 .. type:: type utils::event_handle
@@ -159,8 +152,122 @@ namespace utils
     Get the main loop for this thread.
 
 */
+}
 
+
+#if defined(UTILS_EVENT_LOOP_BACKEND_LIBEV)
+#include "event_loop-libev.hpp"
+#else
+#error Please define one of the following: UTILS_EVENT_LOOP_BACKEND_LIBEV
 #endif
+
+namespace utils {
+
+/**
+.. type:: class utils::unique_event final
+    :movable:
+    :noncopyable:
+    :default_constructible:
+
+    A unique owner of an event handle. Once destroyed, the associated handle
+    will be cancelled.
+*/
+class unique_event final
+{
+public:
+    /**
+    .. function:: unique_event(utils::event_loop& loop, utils::event_handle&& handle)
+
+        Construct the unique owner of the given *handle*, which will be
+        cancelled from the *loop* when this owner is destroyed.
+
+        The *loop* must be valid throughout the lifetime of this object,
+        otherwise an undefined behavior will happen.
+    */
+    unique_event(event_loop& loop, event_handle&& handle)
+        : _loop(&loop), _handle(std::move(handle))
+    {}
+
+    unique_event()
+        : _loop(nullptr)
+    {}
+
+    unique_event(unique_event&& other)
+        : _loop(other._loop), _handle(std::move(other._handle))
+    { other._loop = nullptr; }
+
+    unique_event& operator=(unique_event&& other)
+    {
+        if (this != &other)
+        {
+            if (_loop)
+                _loop->cancel(_handle);
+            _loop = other._loop;
+            _handle = std::move(other._handle);
+            other._loop = nullptr;
+        }
+        return *this;
+    }
+
+    /**
+    .. function:: inline const utils::event_handle& get() const noexcept
+
+        Return the handle of this event.
+    */
+    const event_handle& get() const noexcept { return _handle; }
+
+    /**
+    .. function:: void cancel()
+
+        Cancel the event.
+    */
+    void cancel()
+    {
+        if (_loop)
+        {
+            _loop->cancel(_handle);
+            _loop = nullptr;
+        }
+    }
+
+    /**
+    .. function:: inline explicit operator bool() const noexcept
+
+        Check if the event has been cancelled via this object.
+    */
+    explicit operator bool() const noexcept { return _loop != nullptr; }
+
+    /**
+    .. function:: void swap(utils::unique_event& other)
+
+        Swap the owner of the two events.
+    */
+    void swap(unique_event& other)
+    {
+        using std::swap;    // Allows ADL if possible.
+        swap(_loop, other._loop);
+        swap(_handle, other._handle);
+    }
+
+    ~unique_event() { cancel(); }
+    unique_event(const unique_event&) = delete;
+    unique_event& operator=(const unique_event&) = delete;
+
+private:
+    event_loop* _loop;
+    event_handle _handle;
+};
+
+}
+
+namespace std
+{
+    template <>
+    inline void swap(utils::unique_event& a, utils::unique_event& b)
+    {
+        a.swap(b);
+    }
+}
 
 #endif
 

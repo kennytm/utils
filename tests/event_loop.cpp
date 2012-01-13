@@ -271,5 +271,24 @@ BOOST_AUTO_TEST_CASE(catch_signal)
     BOOST_CHECK_EQUAL(raised_signal, SIGINT);
 }
 
+BOOST_AUTO_TEST_CASE(unique_event_owner)
+{
+    utils::event_loop loop;
+
+    std::vector<utils::unique_event> events;
+    int i = 0;
+
+    auto handle = loop.repeat([&](utils::event_loop& loop, utils::event_handle handle)
+    {
+        ++ i;
+        events.pop_back();
+    });
+    events.emplace_back(loop, std::move(handle));
+
+    loop.run();
+
+    BOOST_CHECK_EQUAL(i, 1);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
