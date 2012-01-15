@@ -263,6 +263,20 @@ struct pointee
     typedef typename std::remove_reference<decltype(*std::declval<T>())>::type type;
 };
 
+/**
+.. function:: typename std::add_rvalue_reference<T>::type utils::rt_val<T>() noexcept
+
+    Returns a value of type *T*. It is guaranteed to do nothing and will not
+    throw a compile-time error, but using the returned result will cause
+    undefined behavior.
+*/
+template <typename T>
+typename std::add_rvalue_reference<T>::type rt_val() noexcept
+{
+    return std::move(*static_cast<T*>(nullptr));
+}
+
+
 //-- Compile-time metafunctions ------------------------------------------------
 
 template <size_t... n>
