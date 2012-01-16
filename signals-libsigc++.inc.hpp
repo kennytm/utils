@@ -56,6 +56,9 @@ public:
 
     R emit(Args... args) const
     { return _signal.emit(std::forward<Args>(args)...); }
+
+    bool empty() const noexcept
+    { return _signal.empty(); }
 };
 
 }

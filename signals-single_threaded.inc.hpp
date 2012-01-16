@@ -139,6 +139,9 @@ namespace xx_impl
         slot_connection operator+=(T&& slot)
         { return connect(std::forward<T>(slot)); }
 
+        bool empty() const noexcept
+        { return _slots.empty(); }
+
         ~signal_base() {}
 
     protected:

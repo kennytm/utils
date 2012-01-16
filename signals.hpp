@@ -173,6 +173,13 @@ struct signal
     { return connect(std::forward<T>(slot)); }
 
     /**
+    .. function:: bool empty() const noexcept
+
+        Check if the signal has no connected slots.
+    */
+    bool empty() const noexcept;
+
+    /**
     .. function:: R emit(A... args) const
 
         Emit the signal.

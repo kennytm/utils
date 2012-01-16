@@ -21,16 +21,26 @@ BOOST_AUTO_TEST_CASE(doc_test)
 
     Controller controller;
 
+    BOOST_CHECK(controller.on_touch_move.empty());
+    BOOST_CHECK(controller.on_mouse_move.empty());
+
     controller.on_touch_move += [&](int x, int y)
     {
         a = x;
         b = y;
     };
+
+    BOOST_CHECK(!controller.on_touch_move.empty());
+    BOOST_CHECK(controller.on_mouse_move.empty());
+
     controller.on_mouse_move += [&](int x, int y)
     {
         c = x*3;
         d = y*3;
     };
+
+    BOOST_CHECK(!controller.on_touch_move.empty());
+    BOOST_CHECK(!controller.on_mouse_move.empty());
 
     controller.on_touch_move += controller.on_mouse_move;
     controller.move_touch_to(1, 2);
