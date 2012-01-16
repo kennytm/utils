@@ -26,6 +26,7 @@ by a custom deallocation or reference-counting mechanism.
 #include <functional>
 #include <type_traits>
 #include <boost/config.hpp>
+#include <utils/traits.hpp>
 
 namespace utils {
 
@@ -181,6 +182,174 @@ bool operator<(const unique_handle<HandleDeleter>& a,
 {
     return a.get() < b.get();
 }
+
+//}}}
+
+//{{{ unique invalidator
+
+/**
+.. type:: class unique_invalidator<InvalidatorType, InvalidatorType invalidator> final
+    :default_constructible:
+    :movable:
+    :noncopyable:
+
+    An smart object which owns a handle spit off by some resource pool, which
+    will be erased when this invalidator is destroyed.
+
+    The *InvalidatorType* should be a type of member function pointer
+    *invalidator* of the resource pool. It should refer to a method which will
+    be used to cancel the resource, and the first argument must be the handle,
+    passed by value, const reference or rvalue reference.
+
+    The invalidator must not outlive the pool it is associated with, and the
+    owned handle must not be invalidated by external means (just like a pointer
+    owned by ``std::unique_ptr`` should not be ``delete``\ d).
+*/
+template <typename InvalidatorType, InvalidatorType invalidator>
+class unique_invalidator final
+{
+    typedef function_traits<InvalidatorType> func_traits;
+
+public:
+    /**
+    .. type:: type pool_type
+
+        The type of the resource pool is invalidator has.
+    */
+    typedef typename func_traits::owner_type pool_type;
+
+    /**
+    .. type:: type handle_type
+
+        The type of the handle to a resource in the resource pool.
+    */
+    typedef typename std::decay<typename func_traits::template arg<0>::type>::type handle_type;
+
+    /**
+    .. function:: inline const handle_type& get() const noexcept
+
+        Get the handle this invalidator is owning.
+    */
+    const handle_type& get() const { return _handle; }
+
+    /**
+    .. function:: handle_type release()
+
+        Release ownership of the handle, and return it.
+    */
+    handle_type release()
+        noexcept(std::is_nothrow_move_constructible<handle_type>::value)
+    {
+        _pool = nullptr;
+        return std::move(_handle);
+    }
+
+    /**
+    .. function:: void reset()
+
+        Invalidate the handle,
+    */
+    void reset()
+        noexcept(noexcept((std::declval<pool_type>().*invalidator)(std::declval<handle_type&&>())))
+    {
+        if (!_pool)
+            return;
+        (_pool->*invalidator)(std::move(_handle));
+        _pool = nullptr;
+    }
+
+    /**
+    .. function:: void reset(pool_type& pool, handle_type&& handle)
+
+        Invalidate the currently owned handle, and then adapt the provided one.
+    */
+    void reset(pool_type& pool, handle_type&& handle)
+        noexcept(noexcept(reset()) && std::is_nothrow_move_assignable<handle_type>::value)
+    {
+        reset();
+        _handle = std::move(handle);
+        _pool = &pool;
+    }
+
+    ~unique_invalidator() noexcept(noexcept(std::declval<unique_invalidator>().reset()))
+    {
+        reset();
+    }
+
+    /**
+    .. function:: unique_invalidator()
+
+        Construct a unique invalidator with no owned handles.
+    */
+    unique_invalidator()
+        noexcept(std::is_nothrow_default_constructible<handle_type>::value)
+        : _pool(nullptr)
+    {}
+
+    /**
+    .. function:: unique_invalidator(pool_type& pool, handle_type&& handle)
+
+        Construct a unique invalidator owning the handle.
+    */
+    unique_invalidator(pool_type& pool, handle_type&& handle)
+        noexcept(std::is_nothrow_move_constructible<handle_type>::value)
+        : _pool(&pool),
+          _handle(std::move(handle))
+    {}
+
+    unique_invalidator(unique_invalidator&& other)
+        noexcept(std::is_nothrow_move_constructible<handle_type>::value)
+        : _pool(other._pool),
+          _handle(std::move(other._handle))
+    { other._pool = nullptr; }
+
+    unique_invalidator(const unique_invalidator&) = delete;
+    unique_invalidator& operator=(const unique_invalidator&) = delete;
+
+    unique_invalidator& operator=(unique_invalidator&& other)
+        noexcept(noexcept(reset(std::declval<pool_type>(), std::declval<handle_type&&>()))
+              && noexcept(release()))
+    {
+        if (this != &other)
+        {
+            auto pool = other._pool;
+            auto handle = other.release();
+            reset(*pool, std::move(handle));
+        }
+        return *this;
+    }
+
+    unique_invalidator& operator=(std::nullptr_t) noexcept(noexcept(reset()))
+    {
+        reset();
+        return *this;
+    }
+
+    void swap(unique_invalidator& other)
+        noexcept(noexcept(std::swap(std::declval<handle_type&>(), std::declval<handle_type&>())))
+    {
+        std::swap(_handle, other._handle);
+        std::swap(_pool, other._pool);
+    }
+
+    explicit operator bool() const noexcept { return _pool != nullptr; }
+
+    bool operator==(const unique_invalidator& other) const
+        noexcept(noexcept(std::declval<handle_type>() == std::declval<handle_type>()))
+    {
+        return _pool == other._pool && _handle == other._handle;
+    }
+
+    bool operator!=(const unique_invalidator& other) const
+        noexcept(noexcept(std::declval<handle_type>() != std::declval<handle_type>()))
+    {
+        return _pool != other._pool || _handle != other._handle;
+    }
+
+private:
+    typename std::add_pointer<pool_type>::type _pool;
+    handle_type _handle;
+};
 
 //}}}
 
@@ -601,6 +770,13 @@ namespace std
     template <typename HandleDeleter>
     void swap(utils::unique_handle<HandleDeleter>& a,
               utils::unique_handle<HandleDeleter>& b) noexcept
+    {
+        a.swap(b);
+    }
+
+    template <typename InvalidatorType, InvalidatorType invalidator>
+    void swap(utils::unique_invalidator<InvalidatorType, invalidator>& a,
+              utils::unique_invalidator<InvalidatorType, invalidator>& b) noexcept(noexcept(a.swap(b)))
     {
         a.swap(b);
     }
