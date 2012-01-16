@@ -25,6 +25,7 @@ by a custom deallocation or reference-counting mechanism.
 #include <utility>
 #include <functional>
 #include <type_traits>
+#include <algorithm>
 #include <boost/config.hpp>
 #include <utils/traits.hpp>
 
@@ -201,9 +202,10 @@ bool operator<(const unique_handle<HandleDeleter>& a,
     be used to cancel the resource, and the first argument must be the handle,
     passed by value, const reference or rvalue reference.
 
-    The invalidator must not outlive the pool it is associated with, and the
-    owned handle must not be invalidated by external means (just like a pointer
-    owned by ``std::unique_ptr`` should not be ``delete``\ d).
+    The invalidator must not outlive the pool it is associated with. If the
+    owned handle is invalidated by external means,
+    :func:`~utils::unique_invalidator::release_if` can be used to safely reset
+    the handle without double invalidation.
 */
 template <typename InvalidatorType, InvalidatorType invalidator>
 class unique_invalidator final
@@ -228,9 +230,20 @@ public:
     /**
     .. function:: inline const handle_type& get() const noexcept
 
-        Get the handle this invalidator is owning.
+        Get the handle this invalidator is owning. If the handle has already
+        been invalidated via :func:`~utils::unique_invalidator::reset` or
+        equivalent methods, the return value may not be valid.
     */
-    const handle_type& get() const { return _handle; }
+    const handle_type& get() const noexcept { return _handle; }
+
+    /**
+    .. function:: inline std::add_pointer<pool_type>::type get_pool() noexcept
+
+        Get the pool this invalidator is using. If the handle has already been
+        invalidator via :func:`~utils::unique_invalidator::reset` or equivalent
+        methods, the return value is nullptr.
+    */
+    typename std::add_pointer<pool_type>::type get_pool() noexcept { return _pool; }
 
     /**
     .. function:: handle_type release()
@@ -264,7 +277,8 @@ public:
         Invalidate the currently owned handle, and then adapt the provided one.
     */
     void reset(pool_type& pool, handle_type&& handle)
-        noexcept(noexcept(reset()) && std::is_nothrow_move_assignable<handle_type>::value)
+        noexcept(noexcept(std::declval<unique_invalidator>().reset())
+              && std::is_nothrow_move_assignable<handle_type>::value)
     {
         reset();
         _handle = std::move(handle);
@@ -307,8 +321,9 @@ public:
     unique_invalidator& operator=(const unique_invalidator&) = delete;
 
     unique_invalidator& operator=(unique_invalidator&& other)
-        noexcept(noexcept(reset(std::declval<pool_type>(), std::declval<handle_type&&>()))
-              && noexcept(release()))
+        noexcept(noexcept(std::declval<unique_invalidator>().reset(std::declval<pool_type>(),
+                                                                   std::declval<handle_type&&>()))
+              && noexcept(std::declval<unique_invalidator>().release()))
     {
         if (this != &other)
         {
@@ -319,7 +334,8 @@ public:
         return *this;
     }
 
-    unique_invalidator& operator=(std::nullptr_t) noexcept(noexcept(reset()))
+    unique_invalidator& operator=(std::nullptr_t)
+        noexcept(noexcept(std::declval<unique_invalidator>().reset()))
     {
         reset();
         return *this;
@@ -328,28 +344,60 @@ public:
     void swap(unique_invalidator& other)
         noexcept(noexcept(std::swap(std::declval<handle_type&>(), std::declval<handle_type&>())))
     {
-        std::swap(_handle, other._handle);
-        std::swap(_pool, other._pool);
+        using std::swap;
+        swap(_handle, other._handle);
+        swap(_pool, other._pool);
     }
 
     explicit operator bool() const noexcept { return _pool != nullptr; }
 
-    bool operator==(const unique_invalidator& other) const
-        noexcept(noexcept(std::declval<handle_type>() == std::declval<handle_type>()))
+    bool operator==(const unique_invalidator& other) const noexcept
     {
         return _pool == other._pool && _handle == other._handle;
     }
 
-    bool operator!=(const unique_invalidator& other) const
-        noexcept(noexcept(std::declval<handle_type>() != std::declval<handle_type>()))
+    bool operator!=(const unique_invalidator& other) const noexcept
     {
         return _pool != other._pool || _handle != other._handle;
+    }
+
+    /**
+    .. function:: void release_if(const pool_type& pool, const handle_type& handle) noexcept
+
+        Release the handle this instance is owning (without invalidation) if it
+        has the same pool and handle as the input.
+    */
+    void release_if(const pool_type& pool, const handle_type& handle) noexcept
+    {
+        if (_pool == &pool && _handle == handle)
+            _pool = nullptr;
     }
 
 private:
     typename std::add_pointer<pool_type>::type _pool;
     handle_type _handle;
 };
+
+/**
+.. function:: ForwardIterator utils::release_if<ForwardIterator>(ForwardIterator begin, ForwardIterator end, const typename utils::pointee<ForwardIterator>::pool_type& pool, const typename utils::pointee<ForwardIterator>::value_type& handle)
+
+    Perform :func:`utils::unique_invalidator<...>::release_if` on all the
+    iterators, and remove them if they are really removed.
+
+    Returns the new iterator to the end after the removal.
+*/
+template <typename ForwardIterator>
+ForwardIterator release_if(ForwardIterator begin, ForwardIterator end,
+                           const typename pointee<ForwardIterator>::pool_type& pool,
+                           const typename pointee<ForwardIterator>::value_type& handle)
+    noexcept(noexcept(handle == handle))
+{
+    return std::remove_if(begin, end, [&](utils::pointee<ForwardIterator>& inv) -> bool
+    {
+        inv.release_if(pool, handle);
+        return !inv;
+    });
+}
 
 //}}}
 
