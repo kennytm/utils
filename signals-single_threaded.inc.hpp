@@ -15,11 +15,13 @@ namespace xx_impl
     {
         std::function<T> function;
         bool is_suspended;
+        mutable bool is_using;
 
         template <typename F>
         slot(F&& f)
             : function(std::forward<F>(f)),
-              is_suspended(false)
+              is_suspended(false),
+              is_using(false)
         {}
 
         ~slot() {}
@@ -100,6 +102,8 @@ namespace xx_impl
 
         virtual void disconnect() override
         {
+            if (_it->is_using)
+                throw std::logic_error("Do not disconnect while emitting that signal!");
             _signal->_slots.erase(_it);
         }
 
@@ -172,10 +176,14 @@ public:
         while (it != this->_slots.end())
         {
             const auto& slot = *it;
+            slot.is_using = false;
             ++ it;
+            if (it != this->_slots.end())
+                it->is_using = true;
             if (!slot.is_suspended)
                 retval = slot.function(args...);
         }
+
         return retval;
     }
 };
@@ -195,7 +203,10 @@ public:
         while (it != this->_slots.end())
         {
             const auto& slot = *it;
+            slot.is_using = false;
             ++ it;
+            if (it != this->_slots.end())
+                it->is_using = true;
             if (!slot.is_suspended)
                 slot.function(args...);
         }
