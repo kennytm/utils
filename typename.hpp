@@ -18,7 +18,6 @@
 #define TYPENAME_HPP_VFENXB3FC1G 1
 
 #include <string>
-#include <cxxabi.h>
 
 #include <array>
 #include <deque>
@@ -46,8 +45,20 @@ namespace xx_impl
 /**
 Members
 -------
+*/
 
-.. type:: std::string utils::typename_of<T...>(const T&...)
+/**
+.. function:: std::string typeinfo_name(const std::type_info& type)
+
+    Get the demangled type name with the given type info.
+
+    The result of this function may be different from
+    :func:`~utils::typename_of`.
+*/
+std::string typeinfo_name(const std::type_info& type);
+
+/**
+.. function:: std::string utils::typename_of<T...>(const T&...)
 
     A function to obtain the name of types *T*.
 
@@ -62,12 +73,9 @@ Members
 template <typename T>
 std::string typename_of(const T&)
 {
-    int status;
-    char* real_name = abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
-    std::string res (real_name);
-    free(real_name);
-    return xx_impl::remove_insignificant_spaces(res);
+    return typeinfo_name(typeid(T));
 }
+
 
 #define SPECIALIZE_TYPENAME_V5Q3A9QL4FE(Type) \
     static inline std::string typename_of(const Type&) { return #Type; }

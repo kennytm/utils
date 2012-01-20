@@ -10,6 +10,7 @@
 #include <cctype>
 #include <utility>
 #include <string>
+#include <cxxabi.h>
 
 namespace utils { namespace xx_impl {
 
@@ -52,6 +53,17 @@ std::string remove_insignificant_spaces(std::string input)
     return input;
 }
 
-}}
+}
+
+std::string typeinfo_name(const std::type_info& type)
+{
+    int status;
+    char* real_name = abi::__cxa_demangle(type.name(), 0, 0, &status);
+    std::string res (real_name);
+    free(real_name);
+    return xx_impl::remove_insignificant_spaces(res);
+}
+
+}
 
 
