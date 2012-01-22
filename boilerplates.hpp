@@ -167,15 +167,29 @@ Members
                                 STRUCT_MEMBERS_SEQ)                             \
         IMPLEMENT_STRUCT_OSTREAM_POST_L8YB90ELQ0M
 
-#define IMPLEMENT_ENUM_BIT_OPS_9MKW9IBN5Y(r, d, ENUM_NAME)                      \
-    static inline ENUM_NAME operator|(ENUM_NAME a, ENUM_NAME b) noexcept        \
-    { return static_cast<ENUM_NAME>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); } \
-    static inline ENUM_NAME operator&(ENUM_NAME a, ENUM_NAME b) noexcept        \
-    { return static_cast<ENUM_NAME>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); } \
-    static inline ENUM_NAME operator^(ENUM_NAME a, ENUM_NAME b) noexcept        \
-    { return static_cast<ENUM_NAME>(static_cast<unsigned>(a) ^ static_cast<unsigned>(b)); } \
-    static inline ENUM_NAME operator~(ENUM_NAME a) noexcept                     \
-    { return static_cast<ENUM_NAME>(~static_cast<unsigned>(a)); }
+#define OVERLOAD_ENUM_BINARY_BIT_OP_T3Y80DQY0Q(EnumName, op) \
+    static inline EnumName operator op(EnumName a, EnumName b) noexcept \
+    { \
+        return static_cast<EnumName>( \
+            static_cast<std::underlying_type<EnumName>::type>(a) op \
+            static_cast<std::underlying_type<EnumName>::type>(b) \
+        ); \
+    } \
+    static inline EnumName& operator op##=(EnumName& a, EnumName b) noexcept \
+    { \
+        return (a = (a op b)); \
+    }
+
+#define IMPLEMENT_ENUM_BIT_OPS_9MKW9IBN5Y(r, d, EnumName) \
+    OVERLOAD_ENUM_BINARY_BIT_OP_T3Y80DQY0Q(EnumName, &) \
+    OVERLOAD_ENUM_BINARY_BIT_OP_T3Y80DQY0Q(EnumName, |) \
+    OVERLOAD_ENUM_BINARY_BIT_OP_T3Y80DQY0Q(EnumName, ^) \
+    static inline EnumName operator~(EnumName a) noexcept \
+    { \
+        return static_cast<EnumName>( \
+            ~static_cast<std::underlying_type<EnumName>::type>(a) \
+        ); \
+    }
 
 /**
 .. macro:: IMPLEMENT_ENUM_BITWISE_OPERATORS(ENUM_NAMES_SEQ)
