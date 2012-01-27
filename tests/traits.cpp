@@ -258,6 +258,17 @@ BOOST_AUTO_TEST_CASE(pointee_test_case)
     BOOST_CHECK_TYPE_EQUAL(utils::pointee<Map::reverse_iterator>::type, Map::value_type);
 }
 
+BOOST_AUTO_TEST_CASE(member_function_type)
+{
+    struct S;
+
+    typedef utils::function_traits<float(double)> FType;
+    BOOST_CHECK_TYPE_EQUAL(FType::member_function_type<S>, float(S::*)(double));
+    BOOST_CHECK_TYPE_EQUAL(FType::member_function_type<const S&>, float(S::*)(double) const);
+    BOOST_CHECK_TYPE_EQUAL(FType::member_function_type<volatile S>, float(S::*)(double) volatile);
+    BOOST_CHECK_TYPE_EQUAL(FType::member_function_type<const volatile S*>, float(S::*)(double) const volatile);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 
