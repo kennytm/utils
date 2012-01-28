@@ -76,9 +76,35 @@ Example::
 
 #include <vector>
 #include <algorithm>
+#include <exception>
 #include <utils/traits.hpp>
 
 namespace utils {
+
+/**
+.. type:: class utils::factory_error : public std::exception
+
+    An error thrown when all factory methods failed to create a valid instance,
+    and some registered factory methods throw exceptions.
+*/
+class factory_error : public std::exception
+{
+public:
+    factory_error(std::vector<std::exception_ptr>&& exceptions);
+    virtual ~factory_error() noexcept;
+    virtual const char* what() const noexcept override;
+
+    /**
+    .. data:: const std::vector<std::exception_ptr> exceptions
+
+        A vector of exceptions thrown inside the factory.
+    */
+    const std::vector<std::exception_ptr> exceptions;
+
+private:
+    std::string _what;
+};
+
 
 /**
 .. type:: class utils::factory<FactoryMethodType, size_t tag = 0> final
@@ -137,18 +163,37 @@ public:
         methods created nothing (returned nullptr), nullptr will be returned.
         If multiple factory methods will create valid instances, the one
         corresponding to the last registered method will be returned.
+
+        If a factory method throws an exception, it will be treated as if it
+        cannot create a valid instance (returned nullptr) and skip to the next
+        method. However, if all factories failed to create instances, all these
+        caught exceptions will be rethrown collectively as a
+        :type:`~utils::factory_error`.
     */
     template <typename... T>
     static typename function_traits<FactoryMethodType>::result_type create(T... args)
     {
+        std::vector<std::exception_ptr> exceptions;
+
         // TODO: Thread safety?
         for (auto method : get_factories())
         {
-            auto retval = method(args...);
-            if (retval)
-                return std::move(retval);
+            try
+            {
+                auto retval = method(args...);
+                if (retval)
+                    return std::move(retval);
+            }
+            catch (...)
+            {
+                exceptions.push_back(std::current_exception());
+            }
         }
-        return nullptr;
+
+        if (exceptions.empty())
+            return nullptr;
+        else
+            throw factory_error(std::move(exceptions));
     }
 
 private:
