@@ -296,7 +296,7 @@ struct pointee
 };
 
 /**
-.. function:: typename std::add_rvalue_reference<T>::type utils::rt_val<T>() noexcept
+.. function:: std::add_rvalue_reference<T>::type utils::rt_val<T>() noexcept
 
     Returns a value of type *T*. It is guaranteed to do nothing and will not
     throw a compile-time error, but using the returned result will cause

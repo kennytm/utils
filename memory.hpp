@@ -379,7 +379,7 @@ private:
 };
 
 /**
-.. function:: ForwardIterator utils::release_if<ForwardIterator>(ForwardIterator begin, ForwardIterator end, const typename utils::pointee<ForwardIterator>::pool_type& pool, const typename utils::pointee<ForwardIterator>::value_type& handle)
+.. function:: ForwardIterator utils::release_if<ForwardIterator>(ForwardIterator begin, ForwardIterator end, const utils::pointee<ForwardIterator>::pool_type& pool, const utils::pointee<ForwardIterator>::handle_type& handle)
 
     Perform :func:`utils::unique_invalidator<...>::release_if` on all the
     iterators, and remove them if they are really removed.
