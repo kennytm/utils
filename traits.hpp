@@ -20,6 +20,16 @@ the standard library.
 #ifndef TRAITS_HPP_9ALQFEFX7TO
 #define TRAITS_HPP_9ALQFEFX7TO 1
 
+#ifdef _MSC_VER
+# if _MSC_VER < 1900
+#  define NOEXCEPT
+# else // _MSC_VER >= 1900
+#  define NOEXCEPT noexcept
+# endif // _MSC_VER < 1900
+#else
+# define NOEXCEPT noexcept
+#endif // _MSCVER
+
 #include <cstdlib>
 #include <tuple>
 #include <functional>
@@ -248,7 +258,7 @@ struct function_traits<const volatile T&&> : public function_traits<T> {};
     a member of *Like*, generalizing ``std::forward``.
 */
 template <typename R, typename T>
-FORWARD_RES_8QR485JMSBT forward_like(T&& input) noexcept
+FORWARD_RES_8QR485JMSBT forward_like(T&& input) NOEXCEPT
 {
     return static_cast<FORWARD_RES_8QR485JMSBT>(input);
 }
@@ -303,7 +313,7 @@ struct pointee
     undefined behavior.
 */
 template <typename T>
-typename std::add_rvalue_reference<T>::type rt_val() noexcept
+typename std::add_rvalue_reference<T>::type rt_val() NOEXCEPT
 {
     return std::move(*static_cast<T*>(nullptr));
 }
